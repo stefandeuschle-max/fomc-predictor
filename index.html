@@ -7,50 +7,82 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg:       #0f1010;
-    --bg2:      #161818;
-    --bg3:      #1c1e1e;
-    --bg4:      #222424;
-    --bg5:      #282b2b;
-    --border:   #2a2d2d;
-    --border2:  #353838;
-    --text:     #d1d5d5;
-    --text2:    #8c9292;
-    --text3:    #5a5f5f;
-    --text4:    #3d4040;
-    --green:    #3daa5c;
-    --greenbg:  #1a3325;
-    --greentxt: #52c97a;
-    --red:      #c94040;
-    --redbg:    #2d1a1a;
-    --redtxt:   #e05c5c;
-    --amber:    #c49a20;
-    --amberbg:  #2e2510;
-    --ambtxt:   #e0b830;
-    --blue:     #2a6fb5;
-    --bluebg:   #141e2d;
-    --bluetxt:  #4a9ae0;
-    --head-bg:  #111313;
-    --row-alt:  #141616;
+    --bg:       #0d0f0e;
+    --bg2:      #131514;
+    --bg3:      #191b1a;
+    --bg4:      #1f2120;
+    --bg5:      #252826;
+    --border:   #252827;
+    --border2:  #303332;
+    --text:     #c8ccc8;
+    --text2:    #7a8078;
+    --text3:    #4e524e;
+    --green:    #3a9e56;
+    --greenbg:  #152a1e;
+    --greentxt: #4ec472;
+    --red:      #b83838;
+    --redbg:    #271414;
+    --redtxt:   #d95858;
+    --amber:    #b08c18;
+    --amberbg:  #28200c;
+    --ambtxt:   #d4aa28;
+    --blue:     #2460a0;
+    --bluebg:   #101828;
+    --bluetxt:  #4488cc;
+    --row-alt:  #111312;
     --font:     'Courier New', Courier, monospace;
   }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 12px; line-height: 1.4; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    line-height: 1.45;
+    min-height: 100vh;
+  }
 
   /* ── TOP BAR ── */
   #topbar {
-    background: var(--head-bg);
-    border-bottom: 1px solid var(--border);
-    padding: 0 8px;
-    height: 28px;
+    background: #0a0c0b;
+    border-bottom: 1px solid var(--border2);
+    padding: 0 10px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-shrink: 0;
+  }
+  .logo {
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .logo span { color: var(--greentxt); }
+  .tagline {
+    font-size: 11px;
+    color: var(--text3);
+    white-space: nowrap;
+  }
+  .topbar-right {
+    margin-left: auto;
     display: flex;
     align-items: center;
     gap: 16px;
   }
-  #topbar .logo { color: #fff; font-weight: bold; font-size: 13px; letter-spacing: 0.03em; }
-  #topbar .logo span { color: var(--greentxt); }
-  #topbar .tagline { color: var(--text3); font-size: 11px; }
-  #topbar .updated { color: var(--text3); font-size: 10px; margin-left: auto; }
+  .last-updated {
+    font-size: 10px;
+    color: var(--text3);
+    white-space: nowrap;
+  }
+  .last-updated strong {
+    color: var(--ambtxt);
+    font-weight: normal;
+  }
 
   /* ── NAV TABS ── */
   #navtabs {
@@ -59,9 +91,10 @@
     display: flex;
     padding: 0 4px;
     gap: 0;
+    overflow-x: auto;
   }
   .ntab {
-    padding: 5px 12px;
+    padding: 6px 14px;
     font-family: var(--font);
     font-size: 11px;
     color: var(--text3);
@@ -70,11 +103,11 @@
     border-bottom: 2px solid transparent;
     cursor: pointer;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    transition: color 0.1s;
+    letter-spacing: 0.06em;
+    transition: color 0.12s;
     white-space: nowrap;
   }
-  .ntab:hover { color: var(--text); }
+  .ntab:hover { color: var(--text2); }
   .ntab.active { color: var(--greentxt); border-bottom-color: var(--greentxt); }
 
   /* ── PANELS ── */
@@ -84,95 +117,142 @@
   /* ── STAT BAR ── */
   .statbar {
     display: flex;
+    flex-wrap: wrap;
     border-bottom: 1px solid var(--border);
     background: var(--bg2);
   }
   .stat-cell {
-    padding: 5px 14px;
+    padding: 6px 16px;
     border-right: 1px solid var(--border);
     white-space: nowrap;
   }
   .stat-cell:last-child { border-right: none; }
-  .stat-lbl { color: var(--text3); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; display: block; }
-  .stat-val { color: var(--text); font-size: 14px; font-weight: bold; display: block; margin-top: 1px; }
+  .stat-lbl {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    display: block;
+    margin-bottom: 2px;
+  }
+  .stat-val {
+    font-size: 16px;
+    font-weight: bold;
+    display: block;
+    color: var(--text);
+  }
   .stat-val.green { color: var(--greentxt); }
   .stat-val.red   { color: var(--redtxt); }
-  .stat-val.amber { color: var(--ambtxt); }
   .stat-val.blue  { color: var(--bluetxt); }
+  .stat-sub {
+    font-size: 9px;
+    color: var(--text3);
+    display: block;
+    margin-top: 1px;
+  }
 
   /* ── FORECAST BANNER ── */
   .forecast-banner {
     background: var(--bg2);
     border-bottom: 1px solid var(--border);
-    padding: 7px 12px;
+    padding: 6px 12px;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 14px;
     flex-wrap: wrap;
   }
-  .fb-label { color: var(--text3); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
-  .fb-val   { font-size: 13px; font-weight: bold; margin-left: 5px; }
+  .fb-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .fb-val   { font-size: 14px; font-weight: bold; margin-left: 4px; }
   .fb-hold  { color: var(--bluetxt); }
   .fb-cut   { color: var(--greentxt); }
-  .fb-sep   { color: var(--border2); }
-  .tally-mini { display: flex; align-items: center; gap: 6px; }
-  .tally-bar-wrap { width: 80px; height: 5px; background: var(--bg4); border-radius: 1px; overflow: hidden; }
+  .fb-sep   { color: var(--border2); font-size: 14px; }
+  .tally-wrap { display: flex; align-items: center; gap: 6px; }
+  .tally-bar-bg { width: 90px; height: 5px; background: var(--bg4); border-radius: 1px; overflow: hidden; }
   .tally-bar-fill { height: 100%; }
   .fill-hold { background: var(--bluetxt); }
   .fill-cut  { background: var(--greentxt); }
-
-  /* ── MAIN CONTENT AREA ── */
-  .content { display: grid; grid-template-columns: 1fr; }
+  .tally-pct { font-size: 10px; color: var(--text2); }
 
   /* ── SECTION HEADER ── */
   .sec-hd {
     background: var(--bg3);
     border-bottom: 1px solid var(--border);
     border-top: 1px solid var(--border);
-    padding: 3px 8px;
+    padding: 4px 10px;
     font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
     color: var(--text3);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
   }
-  .sec-hd-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--greentxt); display: inline-block; }
+  .dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .dot-green  { background: var(--greentxt); }
+  .dot-blue   { background: var(--bluetxt); }
+  .dot-amber  { background: var(--ambtxt); }
+  .dot-red    { background: var(--redtxt); }
 
-  /* ── MEMBER FORECAST GRID ── */
+  /* ── MEMBER GRID ── */
   .member-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
     gap: 1px;
     background: var(--border);
   }
-  .member-cell {
+  .mc {
     background: var(--bg2);
-    padding: 7px 9px;
-    cursor: default;
+    padding: 8px 10px;
     transition: background 0.1s;
-    position: relative;
   }
-  .member-cell:hover { background: var(--bg3); }
-  .member-cell.cell-hold { border-top: 2px solid var(--blue); }
-  .member-cell.cell-cut  { border-top: 2px solid var(--green); }
-  .member-cell.cell-dis  { border-top: 2px solid var(--amber); }
-  .mc-name { font-size: 11px; font-weight: bold; color: var(--text); letter-spacing: 0.02em; }
-  .mc-role { font-size: 10px; color: var(--text3); margin-bottom: 5px; }
-  .mc-vote { font-size: 12px; font-weight: bold; margin-bottom: 3px; }
-  .mc-vote.hold { color: var(--bluetxt); }
-  .mc-vote.cut  { color: var(--greentxt); }
-  .mc-conf { font-size: 10px; color: var(--text3); }
-  .mc-conf-bar { height: 3px; background: var(--bg4); border-radius: 1px; margin: 3px 0; }
-  .mc-conf-fill { height: 100%; border-radius: 1px; }
-  .mc-dis { font-size: 9px; color: var(--ambtxt); background: var(--amberbg); padding: 1px 5px; border-radius: 2px; display: inline-block; margin-top: 3px; }
-  .stance-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; margin-right: 3px; vertical-align: middle; }
+  .mc:hover { background: var(--bg3); }
+  .mc.mc-hold { border-top: 2px solid var(--blue); }
+  .mc.mc-cut  { border-top: 2px solid var(--green); }
+  .mc.mc-dis  { border-top: 2px solid var(--amber); }
+  .mc-name {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text);
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .sdot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
   .sd-hawk { background: var(--redtxt); }
   .sd-dove { background: var(--greentxt); }
   .sd-cent { background: var(--bluetxt); }
+  .mc-role { font-size: 10px; color: var(--text3); margin: 2px 0 6px; }
+  .mc-vote { font-size: 13px; font-weight: bold; margin-bottom: 3px; }
+  .mc-vote.hold { color: var(--bluetxt); }
+  .mc-vote.cut  { color: var(--greentxt); }
+  .mc-conf { font-size: 10px; color: var(--text3); }
+  .mc-bar { height: 3px; background: var(--bg4); border-radius: 1px; margin: 3px 0; }
+  .mc-bar-fill { height: 100%; border-radius: 1px; }
+  .mc-dis {
+    font-size: 9px;
+    color: var(--ambtxt);
+    background: var(--amberbg);
+    padding: 1px 5px;
+    border-radius: 2px;
+    display: inline-block;
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+  }
 
-  /* ── DATA TABLE (backtest / drill) ── */
+  /* ── CONTEXT STRIP ── */
+  .ctx-strip {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    padding: 5px 10px;
+    font-size: 10px;
+    color: var(--text3);
+    line-height: 1.65;
+  }
+  .ctx-strip strong { color: var(--text2); }
+
+  /* ── DATA TABLE ── */
+  .tbl-wrap { border: 1px solid var(--border); overflow-x: auto; }
   .data-tbl { width: 100%; border-collapse: collapse; }
   .data-tbl th {
     background: var(--bg3);
@@ -180,7 +260,7 @@
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    padding: 4px 8px;
+    padding: 5px 9px;
     text-align: left;
     border-bottom: 1px solid var(--border2);
     border-right: 1px solid var(--border);
@@ -191,7 +271,8 @@
   .data-tbl th:hover { color: var(--text); }
   .data-tbl th:last-child { border-right: none; }
   .data-tbl td {
-    padding: 4px 8px;
+    font-size: 12px;
+    padding: 5px 9px;
     border-bottom: 1px solid var(--border);
     border-right: 1px solid var(--border);
     white-space: nowrap;
@@ -200,10 +281,17 @@
   .data-tbl td:last-child { border-right: none; }
   .data-tbl tr:nth-child(even) td { background: var(--row-alt); }
   .data-tbl tr:hover td { background: var(--bg4); cursor: pointer; }
-  .tbl-wrap { border: 1px solid var(--border); overflow-x: auto; }
 
-  /* ── CHIPS / BADGES ── */
-  .chip { display: inline-block; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; letter-spacing: 0.03em; }
+  /* ── CHIPS ── */
+  .chip {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 1px 6px;
+    border-radius: 2px;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
   .chip-hold  { background: var(--bluebg);  color: var(--bluetxt);  border: 1px solid var(--blue); }
   .chip-cut   { background: var(--greenbg); color: var(--greentxt); border: 1px solid var(--green); }
   .chip-dcut  { background: var(--greenbg); color: var(--greentxt); border: 1px dashed var(--green); }
@@ -215,36 +303,47 @@
   .chip-cent  { background: var(--bluebg);  color: var(--bluetxt);  border: 1px solid var(--blue); }
 
   /* ── ACCURACY BAR ── */
-  .acc-wrap { display: flex; align-items: center; gap: 6px; }
-  .acc-track { width: 70px; height: 5px; background: var(--bg4); border-radius: 1px; flex-shrink: 0; }
+  .acc-wrap { display: flex; align-items: center; gap: 7px; }
+  .acc-track { width: 72px; height: 5px; background: var(--bg4); border-radius: 1px; flex-shrink: 0; }
   .acc-fill  { height: 100%; border-radius: 1px; }
 
-  /* ── RESULT INDICATORS ── */
-  .res-c { color: var(--greentxt); font-weight: bold; }
-  .res-w { color: var(--redtxt);   font-weight: bold; }
-  .res-n { color: var(--text3); }
+  /* ── RESULT ── */
+  .res-c { color: var(--greentxt); font-weight: bold; font-size: 11px; }
+  .res-w { color: var(--redtxt);   font-weight: bold; font-size: 11px; }
+  .res-n { color: var(--text3); font-size: 11px; }
+  .miss-note { font-size: 10px; color: var(--text3); display: block; margin-top: 1px; }
 
-  /* ── CHART AREA ── */
-  .charts-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
-  .chart-box { background: var(--bg2); padding: 10px 12px; }
-  .chart-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 8px; }
+  /* ── CHARTS ── */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+  .chart-box { background: var(--bg2); padding: 12px 14px; }
+  .chart-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 10px; }
   .chart-outer { position: relative; }
 
-  /* ── DETAIL ROW TABLE ── */
-  .detail-grid { display: grid; grid-template-columns: 88px 120px 90px 115px 1fr; gap: 0; }
-  .detail-hd   { display: grid; grid-template-columns: 88px 120px 90px 115px 1fr; background: var(--bg3); border-bottom: 1px solid var(--border2); }
-  .dg-cell { padding: 4px 8px; border-right: 1px solid var(--border); font-size: 10px; border-bottom: 1px solid var(--border); }
-  .dg-cell:last-child { border-right: none; }
-  .dg-hd { padding: 3px 8px; border-right: 1px solid var(--border); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
-  .dg-hd:last-child { border-right: none; }
-  .dg-correct { border-left: 2px solid var(--greentxt) !important; }
-  .dg-wrong   { border-left: 2px solid var(--redtxt)   !important; }
-  .dg-nv      { opacity: 0.35; }
-  .miss-note  { font-size: 9px; color: var(--text3); margin-top: 1px; }
+  /* ── LEGEND ── */
+  .legend-bar {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    padding: 5px 10px;
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text3); }
+  .legend-sq { width: 8px; height: 8px; border-radius: 1px; flex-shrink: 0; }
 
-  /* ── BACK BUTTON ── */
-  .back-btn {
+  /* ── DETAIL PANEL ── */
+  .detail-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
     background: var(--bg3);
+    border-bottom: 1px solid var(--border2);
+  }
+  .detail-name { font-size: 14px; font-weight: bold; color: var(--text); }
+  .back-btn {
+    background: var(--bg4);
     border: 1px solid var(--border2);
     color: var(--text2);
     font-family: var(--font);
@@ -254,42 +353,26 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
-  .back-btn:hover { background: var(--bg4); color: var(--text); }
+  .back-btn:hover { background: var(--bg5); color: var(--text); }
+  .drill-stats { display: flex; flex-wrap: wrap; background: var(--bg2); border-bottom: 1px solid var(--border); }
+  .ds-cell { padding: 7px 16px; border-right: 1px solid var(--border); }
+  .ds-lbl  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); }
+  .ds-val  { font-size: 18px; font-weight: bold; margin-top: 2px; }
 
-  /* ── CONTEXT BOX ── */
-  .context-strip {
-    background: var(--bg2);
-    border-top: 1px solid var(--border);
-    padding: 5px 10px;
-    font-size: 10px;
-    color: var(--text3);
-    line-height: 1.6;
-  }
-  .context-strip strong { color: var(--text2); }
+  /* ── CONDITIONS ROW IN DETAIL ── */
+  .cond-red   { color: var(--redtxt); }
+  .cond-green { color: var(--greentxt); }
+  .cond-norm  { color: var(--text); }
 
-  /* ── DRILL METRICS ── */
-  .drill-stats { display: flex; background: var(--bg2); border-bottom: 1px solid var(--border); }
-  .ds-cell { padding: 6px 14px; border-right: 1px solid var(--border); }
-  .ds-lbl  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); }
-  .ds-val  { font-size: 16px; font-weight: bold; margin-top: 1px; }
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
 
-  /* ── LEGEND ── */
-  .legend-bar {
-    background: var(--bg2);
-    border-top: 1px solid var(--border);
-    padding: 4px 10px;
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text3); }
-  .legend-sq   { width: 8px; height: 8px; border-radius: 1px; flex-shrink: 0; }
-
-  @media (max-width: 650px) {
-    .charts-layout { grid-template-columns: 1fr; }
-    .detail-grid, .detail-hd { grid-template-columns: 80px 80px 1fr; }
-    .detail-grid > *:nth-child(4n+2), .detail-hd > *:nth-child(2) { display: none; }
-    .detail-grid > *:nth-child(4n+4), .detail-hd > *:nth-child(4) { display: none; }
+  /* ── RESPONSIVE ── */
+  @media (max-width: 700px) {
+    .charts-row { grid-template-columns: 1fr; }
+    .tagline { display: none; }
   }
 </style>
 </head>
@@ -298,8 +381,12 @@
 <!-- TOP BAR -->
 <div id="topbar">
   <div class="logo">FOMC<span>PREDICTOR</span></div>
-  <div class="tagline">Member vote forecasting · Algorithm backtest · Mar 2024 – Mar 2026</div>
-  <div class="updated">Data as of Mar 2026 · 17 meetings · 16 members</div>
+  <div class="tagline">Algorithm-based vote forecast &middot; Backtest Mar 2024 &ndash; Mar 2026</div>
+  <div class="topbar-right">
+    <div class="last-updated">
+      Last updated: <strong id="last-updated-ts">LAST_UPDATED_PLACEHOLDER</strong>
+    </div>
+  </div>
 </div>
 
 <!-- NAV TABS -->
@@ -309,53 +396,47 @@
   <button class="ntab" onclick="sw('drill')">Member Drill-Down</button>
 </div>
 
-<!-- ═══════════════════════════════════════
-     PANEL 1 — NEXT MEETING
-═══════════════════════════════════════ -->
+<!-- ═══════════ PANEL 1: NEXT MEETING ═══════════ -->
 <div class="panel active" id="p-next">
   <div class="forecast-banner" id="fb"></div>
-  <div class="sec-hd"><span class="sec-hd-dot"></span>Individual predictions — Apr 28–29, 2026</div>
+  <div class="sec-hd"><span class="dot dot-green"></span>Individual predictions &mdash; Apr 28&ndash;29, 2026</div>
   <div class="member-grid" id="member-grid"></div>
-  <div class="context-strip" id="ctx"></div>
+  <div class="ctx-strip" id="ctx"></div>
 </div>
 
-<!-- ═══════════════════════════════════════
-     PANEL 2 — BACKTEST
-═══════════════════════════════════════ -->
+<!-- ═══════════ PANEL 2: BACKTEST ═══════════ -->
 <div class="panel" id="p-backtest">
   <div class="statbar" id="bt-stats"></div>
-  <div class="charts-layout">
+  <div class="charts-row">
     <div class="chart-box">
-      <div class="chart-title">Accuracy by member (%)</div>
-      <div class="chart-outer" style="height:260px;"><canvas id="chart-m"></canvas></div>
+      <div class="chart-title"><span class="dot dot-green" style="margin-right:5px;"></span>Accuracy by member (%)</div>
+      <div class="chart-outer" style="height:270px;"><canvas id="chart-m"></canvas></div>
     </div>
     <div class="chart-box">
-      <div class="chart-title">Accuracy by meeting (%)</div>
-      <div class="chart-outer" style="height:260px;"><canvas id="chart-mt"></canvas></div>
+      <div class="chart-title"><span class="dot dot-blue" style="margin-right:5px;"></span>Accuracy by meeting (%)</div>
+      <div class="chart-outer" style="height:270px;"><canvas id="chart-mt"></canvas></div>
     </div>
   </div>
   <div class="legend-bar">
-    <span class="legend-item"><span class="legend-sq" style="background:#3daa5c;"></span>≥ 80% accurate</span>
-    <span class="legend-item"><span class="legend-sq" style="background:#2a6fb5;"></span>60–79% accurate</span>
-    <span class="legend-item"><span class="legend-sq" style="background:#c94040;"></span>&lt; 60% accurate</span>
+    <span class="legend-item"><span class="legend-sq" style="background:#3a9e56;"></span>&ge; 80% &mdash; strong</span>
+    <span class="legend-item"><span class="legend-sq" style="background:#2460a0;"></span>60&ndash;79% &mdash; moderate</span>
+    <span class="legend-item"><span class="legend-sq" style="background:#b83838;"></span>&lt; 60% &mdash; weak</span>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════
-     PANEL 3 — DRILL-DOWN
-═══════════════════════════════════════ -->
+<!-- ═══════════ PANEL 3: DRILL-DOWN ═══════════ -->
 <div class="panel" id="p-drill">
   <div id="drill-tbl-wrap">
-    <div class="sec-hd"><span class="sec-hd-dot"></span>All members — click row to expand</div>
+    <div class="sec-hd"><span class="dot dot-blue"></span>All members &mdash; click any row to expand</div>
     <div class="tbl-wrap">
       <table class="data-tbl">
         <thead><tr>
-          <th onclick="sortDrill('nm')">Member</th>
+          <th onclick="sortBy('nm')">Member &#9651;</th>
           <th>Stance</th>
-          <th onclick="sortDrill('eli')">Eligible</th>
-          <th onclick="sortDrill('corr')">Correct</th>
-          <th onclick="sortDrill('wrng')">Wrong</th>
-          <th onclick="sortDrill('acc')">Accuracy</th>
+          <th onclick="sortBy('eli')">Eligible</th>
+          <th onclick="sortBy('corr')">Correct</th>
+          <th onclick="sortBy('wrng')">Wrong</th>
+          <th onclick="sortBy('acc')">Accuracy &#9651;</th>
           <th></th>
         </tr></thead>
         <tbody id="drill-tbody"></tbody>
@@ -366,7 +447,9 @@
 </div>
 
 <script>
-/* ═══════════════════ DATA ═══════════════════ */
+/* ═══════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════ */
 var MEETINGS = [
   { d:'Mar 2024', pce:2.7, unemp:3.9, tariff:0 },
   { d:'May 2024', pce:2.7, unemp:3.9, tariff:0 },
@@ -387,45 +470,47 @@ var MEETINGS = [
   { d:'Mar 2026', pce:2.5, unemp:4.1, tariff:1 },
 ];
 
-var NEXT = { d:'Apr 28–29, 2026', pce:2.6, unemp:4.1, tariff:1 };
+var NEXT = { d:'Apr 28\u201329, 2026', pce:2.6, unemp:4.1, tariff:1 };
 
 var MEMBERS = [
-  { nm:'Powell',    role:'Chair / Gov.',     stance:'cent', hs:50,  cutPce:2.2, cutU:4.4, hikePce:3.2, hikeU:3.5,
+  { nm:'Powell',    role:'Chair / Governor',    stance:'cent', hs:50, cutPce:2.2, cutU:4.4, hikePce:3.2, hikeU:3.5,
     actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Williams',  role:'NY Fed / V.Chair', stance:'cent', hs:48,  cutPce:2.3, cutU:4.3, hikePce:3.0, hikeU:3.5,
+  { nm:'Williams',  role:'NY Fed / Vice Chair', stance:'cent', hs:48, cutPce:2.3, cutU:4.3, hikePce:3.0, hikeU:3.5,
     actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Jefferson', role:'Governor',         stance:'cent', hs:42,  cutPce:2.4, cutU:4.2, hikePce:3.2, hikeU:3.6,
+  { nm:'Jefferson', role:'Governor',             stance:'cent', hs:42, cutPce:2.4, cutU:4.2, hikePce:3.2, hikeU:3.6,
     actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Barr',      role:'Governor',         stance:'cent', hs:38,  cutPce:2.6, cutU:4.1, hikePce:3.4, hikeU:3.5,
+  { nm:'Barr',      role:'Governor',             stance:'cent', hs:38, cutPce:2.6, cutU:4.1, hikePce:3.4, hikeU:3.5,
     actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Cook',      role:'Governor',         stance:'dove', hs:30,  cutPce:2.8, cutU:4.0, hikePce:3.5, hikeU:4.0,
+  { nm:'Cook',      role:'Governor',             stance:'dove', hs:30, cutPce:2.8, cutU:4.0, hikePce:3.5, hikeU:4.0,
     actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Bowman',    role:'Governor',         stance:'hawk', hs:75,  cutPce:2.1, cutU:4.5, hikePce:2.8, hikeU:3.5,
+  { nm:'Bowman',    role:'Governor',             stance:'hawk', hs:75, cutPce:2.1, cutU:4.5, hikePce:2.8, hikeU:3.5,
     actual:['H','H','H','H','DC','C','H','H','H','H','H','DC','C','C','C','DC','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Waller',    role:'Governor',         stance:'hawk', hs:68,  cutPce:2.4, cutU:4.2, hikePce:3.5, hikeU:3.5,
+  { nm:'Waller',    role:'Governor',             stance:'hawk', hs:68, cutPce:2.4, cutU:4.2, hikePce:3.5, hikeU:3.5,
     actual:['H','H','H','H','C','C','C','H','H','H','H','DC','C','C','C','DC','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Miran',     role:'Governor',         stance:'dove', hs:10,  cutPce:4.0, cutU:3.0, hikePce:4.5, hikeU:3.0, special:'miran',
+  { nm:'Miran',     role:'Governor',             stance:'dove', hs:10, cutPce:4.0, cutU:3.0, hikePce:4.5, hikeU:3.0, special:'miran',
     actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','DB','DB','DB','DC','DC'], el:[0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1] },
-  { nm:'Hammack',   role:'Cleveland Fed',    stance:'hawk', hs:82,  cutPce:2.0, cutU:4.8, hikePce:2.8, hikeU:3.5,
+  { nm:'Hammack',   role:'Cleveland Fed',        stance:'hawk', hs:82, cutPce:2.0, cutU:4.8, hikePce:2.8, hikeU:3.5,
     actual:['NV','NV','NV','NV','NV','NV','DH','NV','NV','NV','NV','NV','NV','NV','NV','H','H'], el:[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,1] },
-  { nm:'Logan',     role:'Dallas Fed',       stance:'hawk', hs:80,  cutPce:2.1, cutU:4.7, hikePce:2.7, hikeU:3.6,
+  { nm:'Logan',     role:'Dallas Fed',           stance:'hawk', hs:80, cutPce:2.1, cutU:4.7, hikePce:2.7, hikeU:3.6,
     actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','H','H'], el:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1] },
-  { nm:'Paulson',   role:'Philadelphia Fed', stance:'dove', hs:38,  cutPce:2.5, cutU:4.3, hikePce:3.3, hikeU:3.6,
+  { nm:'Paulson',   role:'Philadelphia Fed',     stance:'dove', hs:38, cutPce:2.5, cutU:4.3, hikePce:3.3, hikeU:3.6,
     actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','H','H'], el:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1] },
-  { nm:'Kashkari',  role:'Minneapolis Fed',  stance:'cent', hs:55,  cutPce:2.2, cutU:4.4, hikePce:3.1, hikeU:3.5,
+  { nm:'Kashkari',  role:'Minneapolis Fed',      stance:'cent', hs:55, cutPce:2.2, cutU:4.4, hikePce:3.1, hikeU:3.5,
     actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','H','H'], el:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1] },
-  { nm:'Collins',   role:'Boston Fed†',      stance:'cent', hs:55,  cutPce:2.3, cutU:4.3, hikePce:3.1, hikeU:3.5,
+  { nm:'Collins',   role:'Boston Fed \u2020',    stance:'cent', hs:55, cutPce:2.3, cutU:4.3, hikePce:3.1, hikeU:3.5,
     actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','NV','NV'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0] },
-  { nm:'Musalem',   role:'St. Louis Fed†',   stance:'hawk', hs:65,  cutPce:2.2, cutU:4.4, hikePce:3.0, hikeU:3.5,
+  { nm:'Musalem',   role:'St. Louis Fed \u2020', stance:'hawk', hs:65, cutPce:2.2, cutU:4.4, hikePce:3.0, hikeU:3.5,
     actual:['NV','NV','NV','NV','NV','NV','NV','H','H','H','H','H','C','C','C','NV','NV'], el:[0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0] },
-  { nm:'Schmid',    role:'Kansas City Fed†', stance:'hawk', hs:78,  cutPce:2.1, cutU:4.6, hikePce:2.9, hikeU:3.5,
+  { nm:'Schmid',    role:'Kansas City \u2020',   stance:'hawk', hs:78, cutPce:2.1, cutU:4.6, hikePce:2.9, hikeU:3.5,
     actual:['NV','NV','NV','NV','NV','NV','NV','H','H','H','H','H','C','DH','DH','NV','NV'], el:[0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0] },
-  { nm:'Goolsbee',  role:'Chicago Fed†',     stance:'cent', hs:52,  cutPce:2.4, cutU:4.2, hikePce:3.0, hikeU:3.5,
+  { nm:'Goolsbee',  role:'Chicago Fed \u2020',   stance:'cent', hs:52, cutPce:2.4, cutU:4.2, hikePce:3.0, hikeU:3.5,
     actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','DH','NV','NV'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0] },
 ];
 
-/* ═══════════════ ALGORITHM (unchanged) ═══════════════ */
-function runAlgo(member, m) {
+/* ═══════════════════════════════════════════
+   ALGORITHM  (unchanged from original)
+═══════════════════════════════════════════ */
+function runAlgo(m, member) {
   if (member.special === 'miran') return m.pce > 4.0 ? 'H' : 'C';
   var hs = member.hs + (m.tariff * 5);
   if (m.pce >= member.hikePce && m.unemp <= member.hikeU && hs > 65) return 'H';
@@ -433,7 +518,8 @@ function runAlgo(member, m) {
   if (m.pce <= member.cutPce && hs < 50) return 'C';
   return 'H';
 }
-function confScore(member, m, pred) {
+
+function confScore(m, member, pred) {
   if (member.special === 'miran') return 92;
   var hs = member.hs + (m.tariff * 5);
   var margin = pred === 'C'
@@ -441,22 +527,26 @@ function confScore(member, m, pred) {
     : ((m.pce - member.cutPce) * 10) + ((member.cutU - m.unemp) * 8) + hs / 12;
   return Math.min(92, Math.max(48, Math.round(52 + margin)));
 }
+
 function actualDir(a) {
   if (a === 'H' || a === 'DH') return 'H';
   if (a === 'C' || a === 'DC' || a === 'DB') return 'C';
   return 'NV';
 }
+
 function isCorrect(pred, actual) {
   var ad = actualDir(actual);
   if (ad === 'NV') return null;
   return pred === ad;
 }
 
-/* ═══════════════ BACKTEST COMPUTE ═══════════════ */
+/* ═══════════════════════════════════════════
+   BACKTEST COMPUTE
+═══════════════════════════════════════════ */
 var BT = MEMBERS.map(function(member) {
   var rows = MEETINGS.map(function(m, i) {
     if (!member.el[i]) return { eligible:false, pred:null, actual:member.actual[i], correct:null };
-    var pred = runAlgo(member, m);
+    var pred = runAlgo(m, member);
     return { eligible:true, pred:pred, actual:member.actual[i], correct:isCorrect(pred, member.actual[i]) };
   });
   var eli  = rows.filter(function(r){ return r.eligible; }).length;
@@ -465,153 +555,190 @@ var BT = MEMBERS.map(function(member) {
   var acc  = eli > 0 ? Math.round(corr / eli * 100) : 0;
   return { member:member, rows:rows, eli:eli, corr:corr, wrng:wrng, acc:acc };
 });
+
 var totEli  = BT.reduce(function(s,r){ return s+r.eli; }, 0);
 var totCorr = BT.reduce(function(s,r){ return s+r.corr; }, 0);
 var totWrng = BT.reduce(function(s,r){ return s+r.wrng; }, 0);
 var totAcc  = Math.round(totCorr / totEli * 100);
 
-/* ═══════════════ HELPERS ═══════════════ */
-function accCol(a) { return a >= 80 ? '#3daa5c' : a >= 60 ? '#2a6fb5' : '#c94040'; }
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
+function accCol(a) { return a >= 80 ? '#3a9e56' : a >= 60 ? '#2460a0' : '#b83838'; }
+
 function chipActual(v) {
-  var map = { 'H':['chip-hold','HOLD'], 'C':['chip-cut','CUT'], 'DC':['chip-dcut','✗CUT'],'DH':['chip-dhold','✗HOLD'],'DB':['chip-dbig','✗-50'],'NV':['chip-nv','N/V'] };
-  var x = map[v]||['chip-nv','?'];
-  return '<span class="chip '+x[0]+'">'+x[1]+'</span>';
+  var m = {
+    'H':  ['chip-hold','HOLD'],
+    'C':  ['chip-cut','CUT'],
+    'DC': ['chip-dcut','\u2717 CUT'],
+    'DH': ['chip-dhold','\u2717 HOLD'],
+    'DB': ['chip-dbig','\u2717 \u221250bps'],
+    'NV': ['chip-nv','N/V']
+  };
+  var x = m[v] || ['chip-nv','?'];
+  return '<span class="chip ' + x[0] + '">' + x[1] + '</span>';
 }
-function chipPred(p) { return p==='C'?'<span class="chip chip-cut">CUT</span>':'<span class="chip chip-hold">HOLD</span>'; }
+
+function chipPred(p) {
+  return p === 'C'
+    ? '<span class="chip chip-cut">CUT</span>'
+    : '<span class="chip chip-hold">HOLD</span>';
+}
+
 function stanceChip(s) {
-  if(s==='hawk') return '<span class="chip chip-hawk">HAWK</span>';
-  if(s==='dove') return '<span class="chip chip-dove">DOVE</span>';
+  if (s === 'hawk') return '<span class="chip chip-hawk">HAWK</span>';
+  if (s === 'dove') return '<span class="chip chip-dove">DOVE</span>';
   return '<span class="chip chip-cent">CENT</span>';
 }
-function stanceDot(s) {
-  return '<span class="stance-dot '+( s==='hawk'?'sd-hawk':s==='dove'?'sd-dove':'sd-cent' )+'"></span>';
+
+function sdot(s) {
+  return '<span class="sdot ' + (s==='hawk'?'sd-hawk':s==='dove'?'sd-dove':'sd-cent') + '"></span>';
 }
 
-/* ═══════════════ BUILD: NEXT MEETING ═══════════════ */
+/* ═══════════════════════════════════════════
+   PANEL 1 — NEXT MEETING
+═══════════════════════════════════════════ */
 function buildNext() {
-  var preds = MEMBERS.map(function(m) {
-    var p = runAlgo(m, NEXT);
-    var c = confScore(m, NEXT, p);
-    var dis = (m.special==='miran') || ((m.nm==='Bowman'||m.nm==='Waller') && p==='C');
-    return { member:m, pred:p, conf:c, dissent:dis };
+  var preds = MEMBERS.map(function(member) {
+    var p   = runAlgo(NEXT, member);
+    var c   = confScore(NEXT, member, p);
+    var dis = (member.special === 'miran') || ((member.nm === 'Bowman' || member.nm === 'Waller') && p === 'C');
+    return { member:member, pred:p, conf:c, dissent:dis };
   });
-  var holdN = preds.filter(function(x){ return x.pred==='H'; }).length;
-  var cutN  = preds.filter(function(x){ return x.pred==='C'; }).length;
+
+  var holdN = preds.filter(function(x){ return x.pred === 'H'; }).length;
+  var cutN  = preds.filter(function(x){ return x.pred === 'C'; }).length;
   var disN  = preds.filter(function(x){ return x.dissent; }).length;
   var maj   = holdN >= cutN ? 'H' : 'C';
-  var pct   = Math.round(Math.max(holdN,cutN)/preds.length*100);
+  var holdPct = Math.round(holdN / preds.length * 100);
 
   document.getElementById('fb').innerHTML =
-    '<span class="fb-label">Apr 28–29, 2026</span>'+
-    '<span class="fb-sep">|</span>'+
-    '<span class="fb-label">Forecast:</span>'+
-    '<span class="fb-val '+(maj==='H'?'fb-hold':'fb-cut')+'">'+(maj==='H'?'HOLD 3.50–3.75%':'CUT → 3.25–3.50%')+'</span>'+
-    '<span class="fb-sep">|</span>'+
-    '<span class="fb-label">Hold:</span><span class="fb-val fb-hold">'+holdN+'</span>'+
-    '<span class="fb-label" style="margin-left:10px;">Cut:</span><span class="fb-val fb-cut">'+cutN+'</span>'+
-    '<span class="fb-label" style="margin-left:10px;">Dissents expected:</span><span class="fb-val" style="color:var(--ambtxt);">'+disN+'</span>'+
-    '<span class="fb-sep">|</span>'+
-    '<div class="tally-mini">'+
-      '<span style="font-size:10px;color:var(--text3);">Hold</span>'+
-      '<div class="tally-bar-wrap"><div class="tally-bar-fill fill-hold" style="width:'+Math.round(holdN/preds.length*100)+'%;height:100%;"></div></div>'+
-      '<span style="font-size:10px;color:var(--text3);">'+pct+'%</span>'+
+    '<span class="fb-label">Apr 28\u201329, 2026</span>' +
+    '<span class="fb-sep">|</span>' +
+    '<span class="fb-label">Predicted outcome:</span>' +
+    '<span class="fb-val ' + (maj==='H'?'fb-hold':'fb-cut') + '">' + (maj==='H'?'HOLD &mdash; 3.50&ndash;3.75%':'CUT &minus;25bps &rarr; 3.25&ndash;3.50%') + '</span>' +
+    '<span class="fb-sep">|</span>' +
+    '<span class="fb-label">Hold:</span><span class="fb-val fb-hold" style="font-size:13px;">' + holdN + '</span>' +
+    '<span class="fb-label" style="margin-left:10px;">Cut:</span><span class="fb-val fb-cut" style="font-size:13px;">' + cutN + '</span>' +
+    '<span class="fb-label" style="margin-left:10px;">Dissents expected:</span><span class="fb-val" style="font-size:13px;color:var(--ambtxt);">' + disN + '</span>' +
+    '<span class="fb-sep">|</span>' +
+    '<div class="tally-wrap">' +
+      '<span style="font-size:10px;color:var(--text3);">HOLD</span>' +
+      '<div class="tally-bar-bg"><div class="tally-bar-fill fill-hold" style="width:' + holdPct + '%;height:100%;"></div></div>' +
+      '<span class="tally-pct">' + holdPct + '%</span>' +
     '</div>';
 
   var grid = document.getElementById('member-grid');
   grid.innerHTML = '';
   preds.forEach(function(x) {
-    var cellCls = x.dissent ? 'cell-dis' : x.pred==='C' ? 'cell-cut' : 'cell-hold';
+    var cls = x.dissent ? 'mc-dis' : x.pred==='C' ? 'mc-cut' : 'mc-hold';
     var div = document.createElement('div');
-    div.className = 'member-cell ' + cellCls;
-    var cfFill = accCol(x.conf);
+    div.className = 'mc ' + cls;
+    var cfCol = accCol(x.conf);
     div.innerHTML =
-      '<div class="mc-name">'+stanceDot(x.member.stance)+x.member.nm+'</div>'+
-      '<div class="mc-role">'+x.member.role+'</div>'+
-      '<div class="mc-vote '+(x.pred==='C'?'cut':'hold')+'">'+(x.pred==='C'?'CUT −25bps':'HOLD')+'</div>'+
-      '<div class="mc-conf">Confidence: '+x.conf+'%</div>'+
-      '<div class="mc-conf-bar"><div class="mc-conf-fill" style="width:'+x.conf+'%;background:'+cfFill+';"></div></div>'+
+      '<div class="mc-name">' + sdot(x.member.stance) + x.member.nm + '</div>' +
+      '<div class="mc-role">' + x.member.role + '</div>' +
+      '<div class="mc-vote ' + (x.pred==='C'?'cut':'hold') + '">' + (x.pred==='C'?'CUT \u221225bps':'HOLD') + '</div>' +
+      '<div class="mc-conf">Confidence: ' + x.conf + '%</div>' +
+      '<div class="mc-bar"><div class="mc-bar-fill" style="width:' + x.conf + '%;background:' + cfCol + ';"></div></div>' +
       (x.dissent ? '<span class="mc-dis">DISSENT LIKELY</span>' : '');
     grid.appendChild(div);
   });
 
   document.getElementById('ctx').innerHTML =
-    '<strong>Conditions:</strong> PCE 2.6% · Unemployment 4.1% · GDP 2.4% · Tariff pressure: moderate · '+
-    'Oil elevated (Iran conflict) · Powell term ends May 2026 · March SEP revised 2026 inflation to 2.7% · '+
-    'Analyst consensus: hold; one cut possible H2 2026 at earliest. Dissent risk: Miran (unconditional cut), Bowman/Waller (data-dependent).';
+    '<strong>Conditions entering April meeting:</strong> PCE 2.6% (above 2% target) &middot; Unemployment 4.1% &middot; GDP 2.4% &middot; ' +
+    'Tariff pressure: moderate &middot; Oil elevated (Iran conflict) &middot; Powell term ends May 2026 &middot; ' +
+    'March SEP revised 2026 inflation forecast to 2.7%. Consensus: hold rate; one cut possible H2 2026 at earliest. ' +
+    'Dissent risk: Miran (unconditional cut advocate), Bowman &amp; Waller if data softens before meeting. ' +
+    '&dagger; Rotated off committee after 2025.';
 }
 
-/* ═══════════════ BUILD: BACKTEST ═══════════════ */
+/* ═══════════════════════════════════════════
+   PANEL 2 — BACKTEST
+═══════════════════════════════════════════ */
 function buildBacktest() {
   document.getElementById('bt-stats').innerHTML =
-    '<div class="stat-cell"><span class="stat-lbl">Overall accuracy</span><span class="stat-val '+(totAcc>=80?'green':totAcc>=60?'blue':'red')+'">'+totAcc+'%</span></div>'+
-    '<div class="stat-cell"><span class="stat-lbl">Correct</span><span class="stat-val green">'+totCorr+'</span></div>'+
-    '<div class="stat-cell"><span class="stat-lbl">Wrong</span><span class="stat-val red">'+totWrng+'</span></div>'+
-    '<div class="stat-cell"><span class="stat-lbl">Members</span><span class="stat-val">'+MEMBERS.length+'</span></div>'+
-    '<div class="stat-cell"><span class="stat-lbl">Meetings</span><span class="stat-val">'+MEETINGS.length+'</span></div>'+
-    '<div class="stat-cell"><span class="stat-lbl">Total votes analyzed</span><span class="stat-val blue">'+totEli+'</span></div>';
+    '<div class="stat-cell"><span class="stat-lbl">Overall accuracy</span><span class="stat-val ' + (totAcc>=80?'green':totAcc>=60?'blue':'red') + '">' + totAcc + '%</span><span class="stat-sub">' + totCorr + ' of ' + totEli + ' predictions</span></div>' +
+    '<div class="stat-cell"><span class="stat-lbl">Correct</span><span class="stat-val green">' + totCorr + '</span><span class="stat-sub">direction matched actual</span></div>' +
+    '<div class="stat-cell"><span class="stat-lbl">Wrong</span><span class="stat-val red">' + totWrng + '</span><span class="stat-sub">missed calls</span></div>' +
+    '<div class="stat-cell"><span class="stat-lbl">Members</span><span class="stat-val">' + MEMBERS.length + '</span><span class="stat-sub">unique voters</span></div>' +
+    '<div class="stat-cell"><span class="stat-lbl">Meetings</span><span class="stat-val">' + MEETINGS.length + '</span><span class="stat-sub">Mar 2024 \u2013 Mar 2026</span></div>' +
+    '<div class="stat-cell"><span class="stat-lbl">Total votes</span><span class="stat-val blue">' + totEli + '</span><span class="stat-sub">eligible predictions</span></div>';
 
-  var sorted = BT.slice().sort(function(a,b){ return b.acc-a.acc; });
-  var chartCfg = {
-    responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'#1c1e1e', borderColor:'#2a2d2d', borderWidth:1, titleColor:'#d1d5d5', bodyColor:'#8c9292' } },
-    scales:{
-      x:{ ticks:{ color:'#5a5f5f', font:{ family:"'Courier New',monospace", size:10 }, autoSkip:false, maxRotation:45 }, grid:{ color:'#1c1e1e' }, border:{ color:'#2a2d2d' } },
-      y:{ min:0, max:100, ticks:{ callback:function(v){ return v+'%'; }, color:'#5a5f5f', font:{ size:10 } }, grid:{ color:'rgba(255,255,255,0.04)' }, border:{ display:false } }
+  var sorted = BT.slice().sort(function(a,b){ return b.acc - a.acc; });
+  var chartBase = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { backgroundColor:'#191b1a', borderColor:'#303332', borderWidth:1, titleColor:'#c8ccc8', bodyColor:'#7a8078', titleFont:{ family:"'Courier New',monospace" }, bodyFont:{ family:"'Courier New',monospace" } }
+    },
+    scales: {
+      x: { ticks:{ color:'#4e524e', font:{ family:"'Courier New',monospace", size:10 }, autoSkip:false, maxRotation:45 }, grid:{ color:'rgba(255,255,255,0.03)' }, border:{ color:'#252827' } },
+      y: { min:0, max:100, ticks:{ callback:function(v){ return v+'%'; }, color:'#4e524e', font:{ size:10 } }, grid:{ color:'rgba(255,255,255,0.04)' }, border:{ display:false } }
     }
   };
 
   new Chart(document.getElementById('chart-m'), {
-    type:'bar',
-    data:{ labels:sorted.map(function(r){ return r.member.nm; }),
-      datasets:[{ data:sorted.map(function(r){ return r.acc; }), backgroundColor:sorted.map(function(r){ return accCol(r.acc); }), borderRadius:2, borderSkipped:false }] },
-    options:Object.assign({},chartCfg,{ plugins:Object.assign({},chartCfg.plugins,{ tooltip:Object.assign({},chartCfg.plugins.tooltip,{ callbacks:{ label:function(c){ return ' '+c.parsed.y+'%'; } } }) }) })
+    type: 'bar',
+    data: {
+      labels: sorted.map(function(r){ return r.member.nm; }),
+      datasets: [{ data:sorted.map(function(r){ return r.acc; }), backgroundColor:sorted.map(function(r){ return accCol(r.acc); }), borderRadius:2, borderSkipped:false }]
+    },
+    options: JSON.parse(JSON.stringify(chartBase))
   });
 
-  var mAcc = MEETINGS.map(function(m,i){
-    var eli=BT.filter(function(r){ return r.rows[i].eligible; });
-    var corr=eli.filter(function(r){ return r.rows[i].correct===true; }).length;
-    var acc=eli.length>0?Math.round(corr/eli.length*100):0;
+  var mAcc = MEETINGS.map(function(m, i) {
+    var eli  = BT.filter(function(r){ return r.rows[i].eligible; });
+    var corr = eli.filter(function(r){ return r.rows[i].correct === true; }).length;
+    var acc  = eli.length > 0 ? Math.round(corr / eli.length * 100) : 0;
     return { d:m.d, eli:eli.length, corr:corr, acc:acc };
   });
 
+  var opts2 = JSON.parse(JSON.stringify(chartBase));
+  opts2.plugins.tooltip.callbacks = { label: function(c){ return ' ' + c.parsed.y + '% (' + mAcc[c.dataIndex].corr + '/' + mAcc[c.dataIndex].eli + ')'; } };
+
   new Chart(document.getElementById('chart-mt'), {
-    type:'bar',
-    data:{ labels:mAcc.map(function(x){ return x.d; }),
-      datasets:[{ data:mAcc.map(function(x){ return x.acc; }), backgroundColor:mAcc.map(function(x){ return accCol(x.acc); }), borderRadius:2, borderSkipped:false }] },
-    options:Object.assign({},chartCfg,{ plugins:Object.assign({},chartCfg.plugins,{ tooltip:Object.assign({},chartCfg.plugins.tooltip,{ callbacks:{ label:function(c){ return ' '+c.parsed.y+'% ('+mAcc[c.dataIndex].corr+'/'+mAcc[c.dataIndex].eli+')'; } } }) }) })
+    type: 'bar',
+    data: {
+      labels: mAcc.map(function(x){ return x.d; }),
+      datasets: [{ data:mAcc.map(function(x){ return x.acc; }), backgroundColor:mAcc.map(function(x){ return accCol(x.acc); }), borderRadius:2, borderSkipped:false }]
+    },
+    options: opts2
   });
 }
 
-/* ═══════════════ BUILD: DRILL TABLE ═══════════════ */
-var drillSortKey = 'acc';
-var drillSortDir = -1;
+/* ═══════════════════════════════════════════
+   PANEL 3 — DRILL-DOWN
+═══════════════════════════════════════════ */
+var sortKey = 'acc', sortDir = -1;
 
 function buildDrillTable() {
   var sorted = BT.slice().sort(function(a,b){
-    var av = drillSortKey==='nm'?a.member.nm:a[drillSortKey];
-    var bv = drillSortKey==='nm'?b.member.nm:b[drillSortKey];
-    return typeof av==='string' ? av.localeCompare(bv)*drillSortDir : (av-bv)*drillSortDir;
+    var av = sortKey==='nm' ? a.member.nm : a[sortKey];
+    var bv = sortKey==='nm' ? b.member.nm : b[sortKey];
+    return typeof av === 'string' ? av.localeCompare(bv)*sortDir : (av-bv)*sortDir;
   });
   var tbody = document.getElementById('drill-tbody');
   tbody.innerHTML = '';
   sorted.forEach(function(r) {
     var tr = document.createElement('tr');
     tr.innerHTML =
-      '<td style="font-weight:bold;color:var(--text);">'+r.member.nm+'</td>'+
-      '<td>'+stanceChip(r.member.stance)+'</td>'+
-      '<td style="color:var(--text2);">'+r.eli+'</td>'+
-      '<td style="color:var(--greentxt);font-weight:bold;">'+r.corr+'</td>'+
-      '<td style="color:var(--redtxt);font-weight:bold;">'+r.wrng+'</td>'+
-      '<td><div class="acc-wrap"><span style="font-weight:bold;color:'+accCol(r.acc)+';">'+r.acc+'%</span><div class="acc-track"><div class="acc-fill" style="width:'+r.acc+'%;background:'+accCol(r.acc)+';"></div></div></div></td>'+
-      '<td style="color:var(--text3);font-size:10px;">&#9654;</td>';
+      '<td style="font-weight:bold;color:var(--text);">' + r.member.nm + '</td>' +
+      '<td>' + stanceChip(r.member.stance) + '</td>' +
+      '<td style="color:var(--text2);">' + r.eli + '</td>' +
+      '<td style="color:var(--greentxt);font-weight:bold;">' + r.corr + '</td>' +
+      '<td style="color:var(--redtxt);font-weight:bold;">' + r.wrng + '</td>' +
+      '<td><div class="acc-wrap"><span style="font-weight:bold;min-width:36px;color:' + accCol(r.acc) + ';">' + r.acc + '%</span><div class="acc-track"><div class="acc-fill" style="width:' + r.acc + '%;background:' + accCol(r.acc) + ';"></div></div></div></td>' +
+      '<td style="color:var(--text3);font-size:11px;">&#9654;</td>';
     tr.onclick = function(){ showDetail(r); };
     tbody.appendChild(tr);
   });
 }
 
-function sortDrill(key) {
-  if (drillSortKey === key) drillSortDir *= -1;
-  else { drillSortKey = key; drillSortDir = -1; }
+function sortBy(key) {
+  if (sortKey === key) sortDir *= -1;
+  else { sortKey = key; sortDir = -1; }
   buildDrillTable();
 }
 
@@ -621,37 +748,40 @@ function showDetail(r) {
   w.style.display = 'block';
 
   var html =
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg3);border-bottom:1px solid var(--border2);">'+
-    '<span style="font-weight:bold;color:var(--text);font-size:13px;">'+r.member.nm+' &mdash; '+r.member.role+'</span>'+
-    '<button class="back-btn" onclick="hideDetail()">&larr; All Members</button></div>'+
-    '<div class="drill-stats">'+
-    '<div class="ds-cell"><div class="ds-lbl">Accuracy</div><div class="ds-val" style="color:'+accCol(r.acc)+';">'+r.acc+'%</div></div>'+
-    '<div class="ds-cell"><div class="ds-lbl">Correct</div><div class="ds-val" style="color:var(--greentxt);">'+r.corr+'</div></div>'+
-    '<div class="ds-cell"><div class="ds-lbl">Wrong</div><div class="ds-val" style="color:var(--redtxt);">'+r.wrng+'</div></div>'+
-    '<div class="ds-cell"><div class="ds-lbl">Eligible</div><div class="ds-val">'+r.eli+'</div></div>'+
-    '</div>'+
-    '<div class="tbl-wrap"><table class="data-tbl"><thead><tr>'+
-    '<th>Meeting</th><th>PCE</th><th>U/E</th><th>Tariff</th><th>Algorithm predicted</th><th>Actual vote</th><th>Result</th>'+
+    '<div class="detail-topbar">' +
+    '<div class="detail-name">' + r.member.nm + ' &mdash; ' + r.member.role + '</div>' +
+    '<button class="back-btn" onclick="hideDetail()">&larr; All Members</button>' +
+    '</div>' +
+    '<div class="drill-stats">' +
+    '<div class="ds-cell"><div class="ds-lbl">Accuracy</div><div class="ds-val" style="color:' + accCol(r.acc) + ';">' + r.acc + '%</div></div>' +
+    '<div class="ds-cell"><div class="ds-lbl">Correct</div><div class="ds-val" style="color:var(--greentxt);">' + r.corr + '</div></div>' +
+    '<div class="ds-cell"><div class="ds-lbl">Wrong</div><div class="ds-val" style="color:var(--redtxt);">' + r.wrng + '</div></div>' +
+    '<div class="ds-cell"><div class="ds-lbl">Eligible</div><div class="ds-val">' + r.eli + '</div></div>' +
+    '</div>' +
+    '<div class="tbl-wrap"><table class="data-tbl"><thead><tr>' +
+    '<th>Meeting</th><th>PCE</th><th>Unemp.</th><th>Tariff</th><th>Algo predicted</th><th>Actual vote</th><th>Result</th>' +
     '</tr></thead><tbody>';
 
   r.rows.forEach(function(row, i) {
     if (!row.eligible) return;
     var m = MEETINGS[i];
-    var cls = row.correct===true ? 'res-c' : row.correct===false ? 'res-w' : 'res-n';
-    var resText = row.correct===true ? '&#10003; CORRECT' : row.correct===false ? '&#10007; WRONG' : '—';
-    var note = row.correct===false
-      ? ' <span style="font-size:9px;color:var(--text3);">pred '+row.pred+' got '+(actualDir(row.actual))+
-        (row.actual==='DC'?' (dissent)':row.actual==='DH'?' (dissent)':row.actual==='DB'?' (dis-50)':'')+'</span>'
+    var resCls  = row.correct === true ? 'res-c' : row.correct === false ? 'res-w' : 'res-n';
+    var resTxt  = row.correct === true ? '&#10003; Correct' : row.correct === false ? '&#10007; Wrong' : '&mdash;';
+    var missNote = row.correct === false
+      ? '<span class="miss-note">Pred. ' + row.pred + ', got ' + actualDir(row.actual) +
+        (row.actual==='DC'?' (dissent)':row.actual==='DH'?' (dissent)':row.actual==='DB'?' (dis.-50)':'') + '</span>'
       : '';
+    var pceCls  = m.pce <= 2.3 ? 'cond-green' : m.pce >= 2.7 ? 'cond-red' : 'cond-norm';
+    var unCls   = m.unemp >= 4.4 ? 'cond-red' : 'cond-norm';
     html +=
-      '<tr>'+
-      '<td style="font-weight:bold;">'+m.d+'</td>'+
-      '<td style="color:'+(m.pce<=2.3?'var(--greentxt)':m.pce>=2.7?'var(--redtxt)':'var(--text)')+';">'+m.pce.toFixed(1)+'%</td>'+
-      '<td style="color:'+(m.unemp>=4.4?'var(--redtxt)':'var(--text)')+';">'+m.unemp.toFixed(1)+'%</td>'+
-      '<td>'+(m.tariff?'<span style="color:var(--ambtxt);">YES</span>':'<span style="color:var(--text3);">NO</span>')+'</td>'+
-      '<td>'+chipPred(row.pred)+'</td>'+
-      '<td>'+chipActual(row.actual)+'</td>'+
-      '<td><span class="'+cls+'">'+resText+'</span>'+note+'</td>'+
+      '<tr>' +
+      '<td style="font-weight:bold;">' + m.d + '</td>' +
+      '<td class="' + pceCls + '">' + m.pce.toFixed(1) + '%</td>' +
+      '<td class="' + unCls + '">' + m.unemp.toFixed(1) + '%</td>' +
+      '<td>' + (m.tariff ? '<span style="color:var(--ambtxt);">Yes</span>' : '<span style="color:var(--text3);">No</span>') + '</td>' +
+      '<td>' + chipPred(row.pred) + '</td>' +
+      '<td>' + chipActual(row.actual) + '</td>' +
+      '<td><span class="' + resCls + '">' + resTxt + '</span>' + missNote + '</td>' +
       '</tr>';
   });
 
@@ -664,16 +794,30 @@ function hideDetail() {
   document.getElementById('drill-detail').style.display = 'none';
 }
 
-/* ═══════════════ TAB SWITCH ═══════════════ */
+/* ═══════════════════════════════════════════
+   TAB SWITCH
+═══════════════════════════════════════════ */
 function sw(name) {
-  document.querySelectorAll('.ntab').forEach(function(b,i){
-    b.classList.toggle('active',['next','backtest','drill'][i]===name);
+  document.querySelectorAll('.ntab').forEach(function(b, i) {
+    b.classList.toggle('active', ['next','backtest','drill'][i] === name);
   });
-  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
-  document.getElementById('p-'+name).classList.add('active');
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('p-' + name).classList.add('active');
 }
 
-/* ═══════════════ INIT ═══════════════ */
+/* ═══════════════════════════════════════════
+   TIMESTAMP — replace placeholder if not already injected
+═══════════════════════════════════════════ */
+(function() {
+  var el = document.getElementById('last-updated-ts');
+  if (el && el.textContent.indexOf('LAST_UPDATED_PLACEHOLDER') !== -1) {
+    el.textContent = 'live (client)';
+  }
+})();
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
 buildNext();
 buildBacktest();
 buildDrillTable();
