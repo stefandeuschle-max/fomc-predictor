@@ -1,13 +1,295 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Federal Fund Rate Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Design tokens (Macro Dashboard style) ── */
+  :root {
+    --bg:        #f5f6f8;
+    --card:      #ffffff;
+    --border:    #e8ecf0;
+    --borderL:   #f0f2f5;
+    --teal:      #00b4a0;
+    --tealDim:   rgba(0,180,160,0.12);
+    --blue:      #3498db;
+    --blueDim:   rgba(52,152,219,0.12);
+    --green:     #27ae60;
+    --greenDim:  rgba(39,174,96,0.12);
+    --red:       #e74c3c;
+    --redDim:    rgba(231,76,60,0.12);
+    --orange:    #f5a623;
+    --orangeDim: rgba(245,166,35,0.12);
+    --t1:        #1b2a4a;
+    --t2:        #5a6a85;
+    --t3:        #8e9baf;
+    --t4:        #c5cdd8;
+    --font:      'Inter', sans-serif;
+    --mono:      'IBM Plex Mono', monospace;
+    --radius:    8px;
+    --shadow:    0 1px 4px rgba(0,0,0,0.07);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 14px; }
+  body { background: var(--bg); color: var(--t1); font-family: var(--font); min-height: 100vh; }
 
-const C = {
-  teal:'#00b4a0',red:'#e74c3c',green:'#27ae60',orange:'#f5a623',blue:'#3498db',
-  bg:'#f5f6f8',card:'#ffffff',border:'#e8ecf0',borderLight:'#f0f2f5',
-  textPrimary:'#1b2a4a',textSecondary:'#5a6a85',textTertiary:'#8e9baf',
-};
-const MEETINGS=[
+  /* ── Topbar ── */
+  #topbar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  #topbar .logo { font-size: 16px; font-weight: 700; color: var(--t1); }
+  #topbar .logo span { color: var(--teal); }
+  #topbar .tabs { display: flex; gap: 0; margin-left: 32px; height: 100%; }
+  #topbar .tab {
+    padding: 0 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--t3);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    height: 100%;
+    transition: color 0.15s;
+  }
+  #topbar .tab:hover { color: var(--t1); }
+  #topbar .tab.active { color: var(--t1); border-bottom-color: var(--teal); font-weight: 600; }
+  #topbar .status { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--t3); font-family: var(--mono); }
+  #topbar .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--t4); }
+  #topbar .dot.live { background: var(--green); box-shadow: 0 0 0 3px var(--greenDim); }
+  #topbar .dot.loading { background: var(--orange); animation: pulse 1s infinite; }
+  #topbar .dot.error { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ── Layout ── */
+  .panel { display: none; padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .panel.active { display: block; }
+
+  /* ── Banner card ── */
+  .banner {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .banner-date { font-size: 12px; font-weight: 600; color: var(--t3); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 6px; }
+  .banner-label { font-size: 11px; font-weight: 600; color: var(--t3); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 4px; margin-top: 12px; }
+  .banner-verdict { font-size: 22px; font-weight: 700; margin-bottom: 16px; }
+  .banner-verdict.hold { color: var(--blue); }
+  .banner-verdict.cut  { color: var(--teal); }
+  .vote-row { display: flex; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+  .vote-cell { flex: 1; padding: 12px; text-align: center; border-right: 1px solid var(--border); }
+  .vote-cell:last-child { border-right: none; }
+  .vote-cell .vc-val { font-size: 24px; font-weight: 700; color: var(--t1); }
+  .vote-cell .vc-val.teal { color: var(--teal); }
+  .vote-cell .vc-val.orange { color: var(--orange); }
+  .vote-cell .vc-lbl { font-size: 10px; font-weight: 600; color: var(--t3); letter-spacing: 0.07em; text-transform: uppercase; margin-top: 2px; }
+  .prob-row { display: flex; align-items: center; gap: 10px; }
+  .prob-lbl { font-size: 11px; font-weight: 600; color: var(--t3); width: 38px; }
+  .prob-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .prob-fill { height: 100%; background: var(--teal); border-radius: 3px; transition: width 0.6s ease; }
+  .prob-pct { font-size: 12px; font-weight: 600; color: var(--t2); width: 38px; text-align: right; font-family: var(--mono); }
+
+  /* ── Update banner ── */
+  .update-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--t2);
+    font-family: var(--mono);
+  }
+  .update-bar.loading { border-color: var(--orange); background: #fffbf5; }
+  .update-bar.error   { border-color: var(--red);    background: #fff5f5; color: var(--red); cursor: pointer; }
+  .update-bar.ok      { border-color: #d4edda;       background: #f6fbf8; }
+  .update-bar .ub-tag { font-weight: 600; }
+  .update-bar .ub-tag.green { color: var(--green); }
+  .update-bar .ub-tag.orange { color: var(--orange); }
+  .update-bar .ub-tag.red { color: var(--red); }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Section header ── */
+  .sec-hd { font-size: 11px; font-weight: 600; color: var(--t3); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 14px; margin-top: 4px; }
+
+  /* ── Member grid ── */
+  .member-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .mc {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .mc:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-1px); }
+  .mc.hold { border-top-color: var(--blue); }
+  .mc.cut  { border-top-color: var(--teal); }
+  .mc.dis  { border-top-color: var(--orange); }
+  .mc-name { font-size: 13px; font-weight: 700; color: var(--t1); margin-bottom: 2px; }
+  .mc-role { font-size: 11px; color: var(--t3); margin-bottom: 10px; }
+  .mc-vote { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .mc-vote.hold { color: var(--blue); }
+  .mc-vote.cut  { color: var(--teal); }
+  .mc-conf { font-size: 11px; color: var(--t3); margin-bottom: 6px; font-family: var(--mono); }
+  .mini-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .mini-fill { height: 100%; border-radius: 2px; }
+  .dissent-tag { display: inline-block; background: var(--orangeDim); color: var(--orange); border: 1px solid #f0c06a; border-radius: 4px; font-size: 9px; font-weight: 600; padding: 2px 7px; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* ── Conditions box ── */
+  .ctx-box { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; line-height: 1.75; font-size: 13px; color: var(--t2); box-shadow: var(--shadow); }
+  .ctx-box strong { color: var(--t1); }
+  .ctx-box .ctx-title { font-size: 12px; font-weight: 700; color: var(--t1); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .ctx-row { margin-bottom: 6px; }
+
+  /* ── Stat cards ── */
+  .stat-row { display: flex; gap: 12px; margin-bottom: 20px; }
+  .stat-card { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+  .stat-lbl { font-size: 10px; font-weight: 600; color: var(--t3); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 6px; }
+  .stat-val { font-size: 26px; font-weight: 700; color: var(--t1); line-height: 1; font-family: var(--mono); }
+  .stat-sub { font-size: 11px; color: var(--t3); margin-top: 4px; font-family: var(--mono); }
+
+  /* ── Backtest table ── */
+  .bt-table { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .bt-row { display: flex; align-items: center; padding: 11px 16px; border-bottom: 1px solid var(--borderL); cursor: pointer; transition: background 0.1s; gap: 12px; }
+  .bt-row:last-child { border-bottom: none; }
+  .bt-row:hover { background: var(--bg); }
+  .bt-name { font-size: 13px; font-weight: 600; color: var(--t1); width: 100px; }
+  .bt-bar-wrap { flex: 1; }
+  .bt-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+  .bt-fill { height: 100%; border-radius: 2px; }
+  .bt-acc { font-size: 15px; font-weight: 700; width: 48px; text-align: right; font-family: var(--mono); }
+  .bt-frac { font-size: 11px; color: var(--t3); width: 36px; text-align: right; font-family: var(--mono); }
+
+  /* ── Detail view ── */
+  #detail { display: none; }
+  .back-btn { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--teal); cursor: pointer; margin-bottom: 16px; display: inline-block; transition: background 0.1s; }
+  .back-btn:hover { background: var(--tealDim); }
+  .detail-history { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .dh-row { display: flex; align-items: center; padding: 11px 16px; border-bottom: 1px solid var(--borderL); gap: 12px; }
+  .dh-row:last-child { border-bottom: none; }
+  .dh-date { font-size: 13px; font-weight: 600; color: var(--t1); width: 90px; }
+  .dh-eco { font-size: 11px; color: var(--t3); flex: 1; font-family: var(--mono); }
+  .dh-pred { font-size: 12px; font-weight: 600; }
+  .dh-actual { font-size: 12px; font-weight: 600; }
+  .dh-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Chips ── */
+  .chip { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+  .chip.hold  { background: var(--blueDim);  color: var(--blue); }
+  .chip.cut   { background: var(--tealDim);  color: var(--teal); }
+  .chip.dissent { background: var(--orangeDim); color: var(--orange); }
+  .chip.wrong { background: var(--redDim);   color: var(--red); }
+  .chip.right { background: var(--greenDim); color: var(--green); }
+
+  /* ── Responsive ── */
+  @media(max-width:600px){
+    .panel { padding: 14px; }
+    .member-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-row { flex-wrap: wrap; }
+    .stat-card { min-width: calc(50% - 6px); }
+    #topbar .tabs { margin-left: 12px; }
+    #topbar .tab { padding: 0 10px; font-size: 12px; }
+    .banner-verdict { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Topbar ── -->
+<div id="topbar">
+  <div class="logo">Federal Fund Rate <span>PREDICTOR</span></div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('forecast')">Forecast</button>
+    <button class="tab" onclick="switchTab('backtest')">Backtest</button>
+  </div>
+  <div class="status">
+    <div class="dot" id="status-dot"></div>
+    <span id="status-text">—</span>
+  </div>
+</div>
+
+<!-- ══════════════ FORECAST PANEL ══════════════ -->
+<div class="panel active" id="panel-forecast">
+
+  <div class="update-bar loading" id="update-bar">
+    <div class="spinner"></div>
+    <span class="ub-tag orange">Loading</span>
+    <span>Fetching live data from FRED…</span>
+  </div>
+
+  <div class="banner" id="banner-main" style="display:none">
+    <div class="banner-date">Apr 28–29, 2026</div>
+    <div class="banner-label">Predicted Outcome</div>
+    <div class="banner-verdict" id="verdict-text"></div>
+    <div class="vote-row">
+      <div class="vote-cell"><div class="vc-val" id="v-hold">—</div><div class="vc-lbl">Hold</div></div>
+      <div class="vote-cell"><div class="vc-val teal" id="v-cut">—</div><div class="vc-lbl">Cut</div></div>
+      <div class="vote-cell"><div class="vc-val orange" id="v-dis">—</div><div class="vc-lbl">Dissents</div></div>
+    </div>
+    <div class="prob-row">
+      <div class="prob-lbl">HOLD</div>
+      <div class="prob-bar"><div class="prob-fill" id="prob-fill" style="width:0%"></div></div>
+      <div class="prob-pct" id="prob-pct">—</div>
+    </div>
+  </div>
+
+  <div class="sec-hd" id="grid-hd" style="display:none">Individual Predictions</div>
+  <div class="member-grid" id="member-grid"></div>
+
+  <div class="ctx-box" id="ctx-box" style="display:none">
+    <div class="ctx-title">Economic Conditions</div>
+    <div class="ctx-row"><strong>Personal Consumption Expenditures (PCE):</strong> <span id="ctx-pce"></span></div>
+    <div class="ctx-row"><strong>Unemployment (UE):</strong> <span id="ctx-ue"></span></div>
+    <div class="ctx-row"><strong>Tariff Environment:</strong> <span id="ctx-tariff"></span></div>
+    <div class="ctx-row"><strong>Chair Powell's Mandate:</strong> Expires May 2026. Powell has signaled data-dependence and patience.</div>
+    <div class="ctx-row" style="margin-top:10px"><strong>Consensus:</strong> <span id="ctx-consensus"></span></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--t3);font-family:var(--mono)" id="ctx-dates"></div>
+  </div>
+</div>
+
+<!-- ══════════════ BACKTEST PANEL ══════════════ -->
+<div class="panel" id="panel-backtest">
+  <div class="stat-row" id="bt-stats"></div>
+  <div class="sec-hd">Member Accuracy — click to expand</div>
+  <div class="bt-table" id="bt-table"></div>
+</div>
+
+<!-- ══════════════ DETAIL VIEW ══════════════ -->
+<div class="panel" id="panel-detail">
+  <button class="back-btn" onclick="hideDetail()">← All Members</button>
+  <div class="banner" id="detail-banner"></div>
+  <div class="sec-hd">Meeting History</div>
+  <div class="detail-history" id="detail-history"></div>
+</div>
+
+<script>
+// ── API Keys ──────────────────────────────────────────────────────────────────
+const FRED_KEY    = 'YOUR_FRED_API_KEY';   // https://fred.stlouisfed.org/docs/api/api_key.html
+const NEWSAPI_KEY = 'YOUR_NEWSAPI_KEY';    // https://newsapi.org/register
+
+// ── Static data ───────────────────────────────────────────────────────────────
+const MEETINGS = [
   {d:'Mar 2024',pce:2.7,unemp:3.9,tariff:0},{d:'May 2024',pce:2.7,unemp:3.9,tariff:0},
   {d:'Jun 2024',pce:2.6,unemp:4.0,tariff:0},{d:'Jul 2024',pce:2.5,unemp:4.3,tariff:0},
   {d:'Sep 2024',pce:2.2,unemp:4.2,tariff:0},{d:'Nov 2024',pce:2.3,unemp:4.1,tariff:0},
@@ -18,276 +300,326 @@ const MEETINGS=[
   {d:'Dec 2025',pce:2.5,unemp:4.4,tariff:1},{d:'Jan 2026',pce:2.5,unemp:4.1,tariff:1},
   {d:'Mar 2026',pce:2.5,unemp:4.1,tariff:1},
 ];
-const NEXT={d:'Apr 28-29, 2026',pce:2.6,unemp:4.1,tariff:1};
-const MEMBERS=[
-  {nm:'Powell',role:'Chair',stance:'cent',hs:50,cutPce:2.2,cutU:4.4,hikePce:3.2,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
-  {nm:'Williams',role:'NY Fed',stance:'cent',hs:48,cutPce:2.3,cutU:4.3,hikePce:3.0,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
-  {nm:'Jefferson',role:'Governor',stance:'cent',hs:42,cutPce:2.4,cutU:4.2,hikePce:3.2,hikeU:3.6,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
-  {nm:'Barr',role:'Governor',stance:'cent',hs:38,cutPce:2.6,cutU:4.1,hikePce:3.4,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
-  {nm:'Cook',role:'Governor',stance:'dove',hs:30,cutPce:2.8,cutU:4.0,hikePce:3.5,hikeU:4.0,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
-  {nm:'Bowman',role:'Governor',stance:'hawk',hs:75,cutPce:2.1,cutU:4.5,hikePce:2.8,hikeU:3.5,actual:['H','H','H','H','DC','C','H','H','H','H','H','DC','C','C','C','DC','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
-  {nm:'Waller',role:'Governor',stance:'hawk',hs:68,cutPce:2.4,cutU:4.2,hikePce:3.5,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','DC','C','C','C','DC','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
-  {nm:'Miran',role:'Governor',stance:'dove',hs:10,cutPce:4.0,cutU:3.0,hikePce:4.5,hikeU:3.0,special:'miran',actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','DB','DB','DB','DC','DC'],el:[0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1]},
-  {nm:'Hammack',role:'Cleveland',stance:'hawk',hs:82,cutPce:2.0,cutU:4.8,hikePce:2.8,hikeU:3.5,actual:['NV','NV','NV','NV','NV','NV','DH','NV','NV','NV','NV','NV','NV','NV','NV','H','H'],el:[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,1]},
-  {nm:'Logan',role:'Dallas',stance:'hawk',hs:80,cutPce:2.1,cutU:4.7,hikePce:2.7,hikeU:3.6,actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','H','H'],el:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1]},
-  {nm:'Kashkari',role:'Minneapolis',stance:'cent',hs:55,cutPce:2.2,cutU:4.4,hikePce:3.1,hikeU:3.5,actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','H','H'],el:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1]},
-  {nm:'Collins',role:'Boston',stance:'cent',hs:55,cutPce:2.3,cutU:4.3,hikePce:3.1,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','NV','NV'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0]},
-  {nm:'Goolsbee',role:'Chicago',stance:'cent',hs:52,cutPce:2.4,cutU:4.2,hikePce:3.0,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','DH','NV','NV'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0]},
+const MEMBERS = [
+  {nm:'Powell',   role:'Chair',       stance:'cent',hs:50,cutPce:2.2,cutU:4.4,hikePce:3.2,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Williams', role:'NY Fed',      stance:'cent',hs:48,cutPce:2.3,cutU:4.3,hikePce:3.0,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Jefferson',role:'Governor',    stance:'cent',hs:42,cutPce:2.4,cutU:4.2,hikePce:3.2,hikeU:3.6,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Barr',     role:'Governor',    stance:'cent',hs:38,cutPce:2.6,cutU:4.1,hikePce:3.4,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Cook',     role:'Governor',    stance:'dove',hs:30,cutPce:2.8,cutU:4.0,hikePce:3.5,hikeU:4.0,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Bowman',   role:'Governor',    stance:'hawk',hs:75,cutPce:2.1,cutU:4.5,hikePce:2.8,hikeU:3.5,actual:['H','H','H','H','DC','C','H','H','H','H','H','DC','C','C','C','DC','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Waller',   role:'Governor',    stance:'hawk',hs:68,cutPce:2.4,cutU:4.2,hikePce:3.5,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','DC','C','C','C','DC','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Miran',    role:'Governor',    stance:'dove',hs:10,cutPce:4.0,cutU:3.0,hikePce:4.5,hikeU:3.0,special:'miran',actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','DB','DB','DB','DC','DC'],el:[0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1]},
+  {nm:'Hammack',  role:'Cleveland',   stance:'hawk',hs:82,cutPce:2.0,cutU:4.8,hikePce:2.8,hikeU:3.5,actual:['NV','NV','NV','NV','NV','NV','DH','NV','NV','NV','NV','NV','NV','NV','NV','H','H'],el:[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,1]},
+  {nm:'Logan',    role:'Dallas',      stance:'hawk',hs:80,cutPce:2.1,cutU:4.7,hikePce:2.7,hikeU:3.6,actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','H','H'],el:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1]},
+  {nm:'Kashkari', role:'Minneapolis', stance:'cent',hs:55,cutPce:2.2,cutU:4.4,hikePce:3.1,hikeU:3.5,actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','H','H'],el:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1]},
+  {nm:'Collins',  role:'Boston',      stance:'cent',hs:55,cutPce:2.3,cutU:4.3,hikePce:3.1,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','NV','NV'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0]},
+  {nm:'Goolsbee', role:'Chicago',     stance:'cent',hs:52,cutPce:2.4,cutU:4.2,hikePce:3.0,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','DH','NV','NV'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0]},
 ];
-function runAlgo(m,mb){
-  if(mb.special==='miran')return m.pce>4.0?'H':'C';
-  const hs=mb.hs+(m.tariff*5);
-  if(m.pce>=mb.hikePce&&m.unemp<=mb.hikeU&&hs>65)return'H';
-  if(m.pce<=mb.cutPce&&m.unemp>=mb.cutU)return'C';
-  if(m.pce<=mb.cutPce&&hs<50)return'C';
-  return'H';
+
+// ── Algorithms ────────────────────────────────────────────────────────────────
+function runAlgo(cond, mb) {
+  if (mb.special === 'miran') return cond.pce > 4.0 ? 'H' : 'C';
+  const hs = mb.hs + (cond.tariff * 5);
+  if (cond.pce >= mb.hikePce && cond.unemp <= mb.hikeU && hs > 65) return 'H';
+  if (cond.pce <= mb.cutPce  && cond.unemp >= mb.cutU)             return 'C';
+  if (cond.pce <= mb.cutPce  && hs < 50)                           return 'C';
+  return 'H';
 }
-function cf(m,mb,p){
-  if(mb.special==='miran')return 92;
-  const hs=mb.hs+(m.tariff*5);
-  const mg=p==='C'?((mb.cutPce-m.pce)*14)+((m.unemp-mb.cutU)*10):((m.pce-mb.cutPce)*10)+((mb.cutU-m.unemp)*8)+hs/12;
-  return Math.min(92,Math.max(48,Math.round(52+mg)));
+function calcConf(cond, mb, pred) {
+  if (mb.special === 'miran') return 92;
+  const hs = mb.hs + (cond.tariff * 5);
+  const mg = pred === 'C'
+    ? (mb.cutPce - cond.pce) * 14 + (cond.unemp - mb.cutU) * 10
+    : (cond.pce - mb.cutPce) * 10 + (mb.cutU - cond.unemp) * 8 + hs / 12;
+  return Math.min(92, Math.max(48, Math.round(52 + mg)));
 }
-function aDir(a){if(a==='H'||a==='DH')return'H';if(a==='C'||a==='DC'||a==='DB')return'C';return'NV';}
-function isCor(p,a){const ad=aDir(a);if(ad==='NV')return null;return p===ad;}
-function accCol(a){return a>=80?C.green:a>=60?C.blue:C.red;}
-function expandVote(v){
-  if(v==='H') return 'Hold';
-  if(v==='C') return 'Cut';
+function isDissent(mb, pred) {
+  if (mb.special === 'miran') return true;
+  if ((mb.nm === 'Bowman' || mb.nm === 'Waller') && pred === 'C') return true;
+  if (mb.stance === 'hawk' && pred === 'C') return true;
+  return false;
+}
+function accCol(a) { return a >= 80 ? 'var(--green)' : a >= 60 ? 'var(--blue)' : 'var(--red)'; }
+function aDir(a) { if(a==='H'||a==='DH') return 'H'; if(a==='C'||a==='DC'||a==='DB') return 'C'; return 'NV'; }
+function isCor(p, a) { const d = aDir(a); if(d==='NV') return null; return p===d; }
+function expandVote(v) {
+  if(v==='H')  return 'Hold';
+  if(v==='C')  return 'Cut';
   if(v==='DC') return 'Dissent Cut';
   if(v==='DH') return 'Dissent Hold';
   if(v==='DB') return 'Dissent -50bps';
-  if(v==='NV') return '—';
-  return v;
+  return '—';
 }
-const BT=MEMBERS.map(mb=>{
-  const rows=MEETINGS.map((m,i)=>{
-    if(!mb.el[i])return{eligible:false,pred:null,actual:mb.actual[i],correct:null};
-    const pred=runAlgo(m,mb);
-    return{eligible:true,pred,actual:mb.actual[i],correct:isCor(pred,mb.actual[i])};
+
+// ── Backtest (static) ─────────────────────────────────────────────────────────
+const BT = MEMBERS.map(mb => {
+  const rows = MEETINGS.map((m, i) => {
+    if (!mb.el[i]) return {eligible:false, pred:null, actual:mb.actual[i], correct:null};
+    const pred = runAlgo(m, mb);
+    return {eligible:true, pred, actual:mb.actual[i], correct:isCor(pred, mb.actual[i])};
   });
-  const eli=rows.filter(r=>r.eligible).length,corr=rows.filter(r=>r.correct===true).length,wrng=rows.filter(r=>r.correct===false).length;
-  return{mb,rows,eli,corr,wrng,acc:eli>0?Math.round(corr/eli*100):0};
+  const eli  = rows.filter(r => r.eligible).length;
+  const corr = rows.filter(r => r.correct === true).length;
+  const wrng = rows.filter(r => r.correct === false).length;
+  return {mb, rows, eli, corr, wrng, acc: eli > 0 ? Math.round(corr/eli*100) : 0};
 });
-const totEli=BT.reduce((s,r)=>s+r.eli,0),totCorr=BT.reduce((s,r)=>s+r.corr,0);
-const totAcc=Math.round(totCorr/totEli*100);
+const totEli  = BT.reduce((s,r) => s+r.eli,  0);
+const totCorr = BT.reduce((s,r) => s+r.corr, 0);
+const totAcc  = Math.round(totCorr/totEli*100);
 
-function Bar({pct,color,h=4}){
-  return(
-    <View style={{height:h,backgroundColor:C.border,borderRadius:2,overflow:'hidden'}}>
-      <View style={{width:`${pct}%`,height:h,backgroundColor:color,borderRadius:2}}/>
-    </View>
-  );
+// ── Live data fetchers ────────────────────────────────────────────────────────
+async function fetchPCE() {
+  const url = `https://api.stlouisfed.org/fred/series/observations?series_id=PCEPI&sort_order=desc&limit=14&file_type=json&api_key=${FRED_KEY}`;
+  const res  = await fetch(url);
+  const json = await res.json();
+  const obs  = json.observations.filter(o => o.value !== '.');
+  if (obs.length < 13) throw new Error('Not enough PCE data');
+  const latest  = parseFloat(obs[0].value);
+  const yearAgo = parseFloat(obs[12].value);
+  const yoy     = Math.round(((latest - yearAgo) / yearAgo) * 1000) / 10;
+  return {value: yoy, date: obs[0].date};
+}
+async function fetchUnemp() {
+  const url = `https://api.stlouisfed.org/fred/series/observations?series_id=UNRATE&sort_order=desc&limit=1&file_type=json&api_key=${FRED_KEY}`;
+  const res  = await fetch(url);
+  const json = await res.json();
+  const obs  = json.observations.filter(o => o.value !== '.');
+  return {value: parseFloat(obs[0].value), date: obs[0].date};
+}
+async function fetchTariff() {
+  if (!NEWSAPI_KEY || NEWSAPI_KEY === 'YOUR_NEWSAPI_KEY') {
+    return {level:1, label:'Moderate — ongoing since early 2025'};
+  }
+  const from = new Date(Date.now() - 7*24*3600*1000).toISOString().split('T')[0];
+  const url  = `https://newsapi.org/v2/everything?q=US+tariff+Federal+Reserve+inflation&language=en&sortBy=publishedAt&pageSize=30&from=${from}&apiKey=${NEWSAPI_KEY}`;
+  const res  = await fetch(url);
+  const json = await res.json();
+  const articles = json.articles || [];
+  const severeTerms = ['tariff escalation','retaliatory tariff','trade war escalates','new tariff','tariff increase'];
+  const modTerms    = ['tariff','trade war','import duties','trade restriction'];
+  const severeHits  = articles.filter(a => severeTerms.some(t => (a.title+' '+(a.description||'')).toLowerCase().includes(t))).length;
+  const modHits     = articles.filter(a => modTerms.some(t => (a.title+' '+(a.description||'')).toLowerCase().includes(t))).length;
+  const score = severeHits * 3 + modHits;
+  if (score >= 10) return {level:2, label:'Severe — active escalation'};
+  if (score >= 2)  return {level:1, label:'Moderate — ongoing pressure'};
+  return              {level:0, label:'Minimal'};
 }
 
-function MCard({item,onPress}){
-  const bc=item.dissent?C.orange:item.pred==='C'?C.teal:C.blue;
-  return(
-    <TouchableOpacity onPress={onPress} style={[s.mc,{borderTopColor:bc}]} activeOpacity={0.7}>
-      <Text style={s.mcN}>{item.mb.nm}</Text>
-      <Text style={s.mcR}>{item.mb.role}</Text>
-      <Text style={[s.mcV,{color:item.pred==='C'?C.teal:C.blue}]}>{item.pred==='C'?'CUT -25bps':'HOLD'}</Text>
-      <Text style={s.mcC}>Conf: {item.cf}%</Text>
-      <Bar pct={item.cf} color={accCol(item.cf)} h={3}/>
-      {item.dissent&&<View style={s.dis}><Text style={s.disT}>DISSENT LIKELY</Text></View>}
-    </TouchableOpacity>
-  );
+// ── Main update function (called on page load) ────────────────────────────────
+let liveConditions = null;
+
+async function loadData() {
+  setStatus('loading', 'Fetching live data from FRED…');
+  try {
+    const [pce, unemp, tariff] = await Promise.all([fetchPCE(), fetchUnemp(), fetchTariff()]);
+    liveConditions = {
+      pce: pce.value, pceDate: pce.date,
+      unemp: unemp.value, unempDate: unemp.date,
+      tariff: tariff.level, tariffLabel: tariff.label,
+    };
+    setStatus('ok', `PCE ${pce.value.toFixed(1)}%  ·  UE ${unemp.value.toFixed(1)}%  ·  Updated ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`);
+    buildForecast(liveConditions);
+    buildBacktest();
+  } catch(err) {
+    console.error(err);
+    setStatus('error', 'Update failed — click to retry');
+    document.getElementById('update-bar').onclick = loadData;
+    // Fall back to hardcoded values so the page still shows something
+    liveConditions = {pce:2.6, pceDate:'cached', unemp:4.1, unempDate:'cached', tariff:1, tariffLabel:'Moderate — ongoing since early 2025'};
+    buildForecast(liveConditions);
+    buildBacktest();
+  }
 }
 
-function ForecastTab({onMember}){
-  const preds=MEMBERS.map(mb=>{
-    const p=runAlgo(NEXT,mb),c=cf(NEXT,mb,p),dis=(mb.special==='miran')||((mb.nm==='Bowman'||mb.nm==='Waller')&&p==='C');
-    return{mb,pred:p,cf:c,dissent:dis};
+function setStatus(state, msg) {
+  const bar  = document.getElementById('update-bar');
+  const dot  = document.getElementById('status-dot');
+  const stxt = document.getElementById('status-text');
+  bar.className = 'update-bar ' + state;
+  dot.className = 'dot ' + (state === 'ok' ? 'live' : state === 'loading' ? 'loading' : 'error');
+  stxt.textContent = msg;
+
+  if (state === 'loading') {
+    bar.innerHTML = '<div class="spinner"></div><span class="ub-tag orange">Loading</span><span>' + msg + '</span>';
+  } else if (state === 'ok') {
+    bar.innerHTML = '<span class="ub-tag green">✓ Live</span><span>' + msg + '</span>';
+    bar.onclick = null;
+  } else {
+    bar.innerHTML = '<span class="ub-tag red">⚠ Error</span><span>' + msg + '</span>';
+  }
+}
+
+// ── Build forecast tab ────────────────────────────────────────────────────────
+function buildForecast(cond) {
+  const votes   = MEMBERS.map(mb => {
+    const pred    = runAlgo(cond, mb);
+    const conf    = calcConf(cond, mb, pred);
+    const dissent = isDissent(mb, pred);
+    return {mb, pred, conf, dissent};
   });
-  const holdN=preds.filter(x=>x.pred==='H').length,cutN=preds.filter(x=>x.pred==='C').length,disN=preds.filter(x=>x.dissent).length;
-  const maj=holdN>=cutN?'H':'C',hp=Math.round(holdN/preds.length*100);
 
-  return(
-    <ScrollView style={{flex:1,backgroundColor:C.bg}} contentContainerStyle={{padding:16,paddingBottom:32}}>
-      <View style={s.ban}>
-        <Text style={s.bDt}>{NEXT.d}</Text>
-        <Text style={s.bLb}>PREDICTED OUTCOME</Text>
-        <Text style={[s.bOt,{color:maj==='H'?C.blue:C.teal}]}>{maj==='H'?'HOLD — 3.50-3.75%':'CUT -25bps'}</Text>
-        <View style={s.bRw}>
-          <View style={s.bSt}><Text style={s.bV}>{holdN}</Text><Text style={s.bL}>HOLD</Text></View>
-          <View style={s.bDv}/>
-          <View style={s.bSt}><Text style={[s.bV,{color:C.teal}]}>{cutN}</Text><Text style={s.bL}>CUT</Text></View>
-          <View style={s.bDv}/>
-          <View style={s.bSt}><Text style={[s.bV,{color:C.orange}]}>{disN}</Text><Text style={s.bL}>DISSENTS</Text></View>
-        </View>
-        <View style={{flexDirection:'row',alignItems:'center',gap:8}}>
-          <Text style={{fontSize:11,color:C.textTertiary,fontWeight:'600',width:36,lineHeight:16}}>HOLD</Text>
-          <View style={{flex:1,alignSelf:'center'}}><Bar pct={hp} color={C.teal} h={6}/></View>
-          <Text style={{fontSize:12,fontWeight:'600',color:C.textSecondary,lineHeight:16,width:36,textAlign:'right'}}>{hp}%</Text>
-        </View>
-      </View>
+  const holdN = votes.filter(v => v.pred === 'H').length;
+  const cutN  = votes.filter(v => v.pred === 'C').length;
+  const disN  = votes.filter(v => v.dissent).length;
+  const hp    = Math.round(holdN / votes.length * 100);
+  const maj   = holdN >= cutN ? 'H' : 'C';
 
-      <Text style={s.secH}>INDIVIDUAL PREDICTIONS</Text>
-      <View style={s.grid}>
-        {preds.map((item,i)=><MCard key={i} item={item} onPress={()=>onMember(item)}/>)}
-      </View>
+  // Banner
+  const vt = document.getElementById('verdict-text');
+  vt.textContent = maj === 'H' ? 'HOLD — 3.50-3.75%' : 'CUT -25bps';
+  vt.className   = 'banner-verdict ' + (maj === 'H' ? 'hold' : 'cut');
+  document.getElementById('v-hold').textContent = holdN;
+  document.getElementById('v-cut').textContent  = cutN;
+  document.getElementById('v-dis').textContent  = disN;
+  document.getElementById('prob-fill').style.width = hp + '%';
+  document.getElementById('prob-pct').textContent  = hp + '%';
+  document.getElementById('banner-main').style.display = '';
 
-      <View style={s.ctx}>
-        <Text style={{fontSize:12,color:C.textSecondary,lineHeight:19}}>
-          <Text style={{fontWeight:'700',color:C.textPrimary}}>Economic Conditions:{'\n'}</Text>
-          <Text style={{fontWeight:'600',color:C.textPrimary}}>Personal Consumption Expenditures (PCE): </Text>
-          <Text>2.6% — above the 2% target but trending sideways. The committee views this as a reason to remain cautious.{'\n'}</Text>
-          <Text style={{fontWeight:'600',color:C.textPrimary}}>Unemployment (UE): </Text>
-          <Text>4.1% — near the long-run neutral level, labor market remains stable with no urgent pressure to ease.{'\n'}</Text>
-          <Text style={{fontWeight:'600',color:C.textPrimary}}>Tariff Environment: </Text>
-          <Text>Moderate tariff pressure ongoing since early 2025, adding upside risk to inflation and reducing appetite for rate cuts.{'\n'}</Text>
-          <Text style={{fontWeight:'600',color:C.textPrimary}}>Chair Powell's Mandate: </Text>
-          <Text>Expires May 2026. Powell has signaled data-dependence and patience.{'\n\n'}</Text>
-          <Text style={{fontWeight:'600',color:C.textPrimary}}>Consensus: </Text>
-          <Text>Broad agreement to hold at 3.50–3.75%. A cut remains possible in H2 2026 if PCE eases toward 2.2% or unemployment rises above 4.4%.</Text>
-        </Text>
-      </View>
-    </ScrollView>
-  );
+  // Member grid
+  const grid = document.getElementById('member-grid');
+  grid.innerHTML = '';
+  votes.forEach(item => {
+    const cls   = item.dissent ? 'dis' : item.pred === 'C' ? 'cut' : 'hold';
+    const color = item.pred === 'C' ? 'var(--teal)' : 'var(--blue)';
+    const div   = document.createElement('div');
+    div.className = 'mc ' + cls;
+    div.innerHTML = `
+      <div class="mc-name">${item.mb.nm}</div>
+      <div class="mc-role">${item.mb.role}</div>
+      <div class="mc-vote ${item.pred==='C'?'cut':'hold'}">${item.pred==='C'?'CUT -25bps':'HOLD'}</div>
+      <div class="mc-conf">Conf: ${item.conf}%</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:${item.conf}%;background:${accCol(item.conf)}"></div></div>
+      ${item.dissent ? '<div class="dissent-tag">Dissent Likely</div>' : ''}
+    `;
+    div.onclick = () => showDetail(item.mb);
+    grid.appendChild(div);
+  });
+  document.getElementById('grid-hd').style.display = '';
+
+  // Conditions box
+  const pceDesc   = cond.pce > 2.5
+    ? `${cond.pce.toFixed(1)}% — above the 2% target, giving the committee reason to remain cautious.`
+    : `${cond.pce.toFixed(1)}% — near the 2% target, opening room for potential easing.`;
+  const unempDesc = cond.unemp >= 4.4
+    ? `${cond.unemp.toFixed(1)}% — elevated, increasing pressure toward a rate cut.`
+    : `${cond.unemp.toFixed(1)}% — near the neutral level, labor market remains stable.`;
+  const consensus = maj === 'H'
+    ? `Broad agreement to hold at 3.50–3.75%. A cut remains possible in H2 2026 if PCE eases toward 2.2% or unemployment rises above 4.4%.`
+    : `Growing consensus for a 25bps cut. Dissents expected from hawkish members if PCE remains above 2.4%.`;
+
+  document.getElementById('ctx-pce').textContent    = pceDesc;
+  document.getElementById('ctx-ue').textContent     = unempDesc;
+  document.getElementById('ctx-tariff').textContent = cond.tariffLabel + ' — adds upside risk to inflation and reduces appetite for cuts.';
+  document.getElementById('ctx-consensus').textContent = consensus;
+  document.getElementById('ctx-dates').textContent  = `Data as of: PCE ${cond.pceDate}  ·  Unemployment ${cond.unempDate}`;
+  document.getElementById('ctx-box').style.display  = '';
 }
 
-function BacktestTab({onMember}){
-  return(
-    <ScrollView style={{flex:1,backgroundColor:C.bg}} contentContainerStyle={{padding:16,paddingBottom:32}}>
-      <View style={{flexDirection:'row',gap:10,marginBottom:16}}>
-        <View style={s.stC}>
-          <Text style={s.stL}>ACCURACY</Text>
-          <Text style={[s.stV,{color:accCol(totAcc),lineHeight:28}]}>{totAcc}%</Text>
-          <Text style={s.stS}>{totCorr}/{totEli}</Text>
-        </View>
-        <View style={s.stC}>
-          <Text style={s.stL}>CORRECT</Text>
-          <Text style={[s.stV,{color:C.green,lineHeight:28}]}>{totCorr}</Text>
-          <Text style={s.stS}>matched</Text>
-        </View>
-        <View style={s.stC}>
-          <Text style={s.stL}>MEETINGS</Text>
-          <Text style={[s.stV,{lineHeight:28}]}>17</Text>
-          <Text style={s.stS}>Mar 24–26</Text>
-        </View>
-      </View>
-      <Text style={s.secH}>MEMBER ACCURACY — tap to expand</Text>
-      <View style={s.tbl}>
-        {[...BT].sort((a,b)=>b.acc-a.acc).map((r,i)=>(
-          <TouchableOpacity key={i} style={[s.tRw,i===BT.length-1&&{borderBottomWidth:0}]}
-            onPress={()=>onMember({mb:r.mb,pred:runAlgo(NEXT,r.mb),cf:cf(NEXT,r.mb,runAlgo(NEXT,r.mb)),dissent:false})}
-            activeOpacity={0.7}>
-            <View style={{flex:1}}>
-              <Text style={{fontSize:13,fontWeight:'600',color:C.textPrimary}}>{r.mb.nm}</Text>
-              <Bar pct={r.acc} color={accCol(r.acc)} h={3}/>
-            </View>
-            <Text style={[s.aB,{color:accCol(r.acc)}]}>{r.acc}%</Text>
-            <Text style={{fontSize:11,color:C.textTertiary,marginLeft:4,width:32}}>{r.corr}/{r.eli}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </ScrollView>
-  );
+// ── Build backtest tab ────────────────────────────────────────────────────────
+function buildBacktest() {
+  // Stats
+  document.getElementById('bt-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-lbl">Accuracy</div>
+      <div class="stat-val" style="color:${accCol(totAcc)}">${totAcc}%</div>
+      <div class="stat-sub">${totCorr} / ${totEli} predictions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-lbl">Correct</div>
+      <div class="stat-val" style="color:var(--green)">${totCorr}</div>
+      <div class="stat-sub">direction matched</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-lbl">Meetings</div>
+      <div class="stat-val">17</div>
+      <div class="stat-sub">Mar 2024 – Mar 2026</div>
+    </div>
+  `;
+
+  // Table
+  const tbl = document.getElementById('bt-table');
+  tbl.innerHTML = '';
+  [...BT].sort((a,b) => b.acc - a.acc).forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'bt-row';
+    row.innerHTML = `
+      <div class="bt-name">${r.mb.nm}</div>
+      <div class="bt-bar-wrap">
+        <div style="font-size:11px;color:var(--t3)">${r.mb.role}</div>
+        <div class="bt-bar"><div class="bt-fill" style="width:${r.acc}%;background:${accCol(r.acc)}"></div></div>
+      </div>
+      <div class="bt-acc" style="color:${accCol(r.acc)}">${r.acc}%</div>
+      <div class="bt-frac">${r.corr}/${r.eli}</div>
+    `;
+    row.onclick = () => showDetail(r.mb);
+    tbl.appendChild(row);
+  });
 }
 
-function DetailView({item,onBack}){
-  const r=BT.find(x=>x.mb.nm===item.mb.nm);
-  return(
-    <ScrollView style={{flex:1,backgroundColor:C.bg}} contentContainerStyle={{padding:16,paddingBottom:32}}>
-      <TouchableOpacity onPress={onBack} style={s.back}>
-        <Text style={{fontSize:13,fontWeight:'600',color:C.teal}}>← All Members</Text>
-      </TouchableOpacity>
-      <View style={s.ban}>
-        <Text style={s.bDt}>{item.mb.nm} — {item.mb.role}</Text>
-        <View style={s.bRw}>
-          <View style={s.bSt}><Text style={[s.bV,{color:accCol(r.acc)}]}>{r.acc}%</Text><Text style={s.bL}>ACC</Text></View>
-          <View style={s.bDv}/>
-          <View style={s.bSt}><Text style={[s.bV,{color:C.green}]}>{r.corr}</Text><Text style={s.bL}>CORRECT</Text></View>
-          <View style={s.bDv}/>
-          <View style={s.bSt}><Text style={[s.bV,{color:C.red}]}>{r.wrng}</Text><Text style={s.bL}>WRONG</Text></View>
-        </View>
-        <Text style={s.bLb}>APR 28-29 PREDICTION</Text>
-        <Text style={[s.bOt,{color:item.pred==='C'?C.teal:C.blue,fontSize:18}]}>{item.pred==='C'?'CUT -25bps':'HOLD'}</Text>
-      </View>
-      <Text style={s.secH}>MEETING HISTORY</Text>
-      <View style={s.tbl}>
-        {r.rows.map((row,i)=>{
-          if(!row.eligible)return null;
-          const m=MEETINGS[i];
-          const dot=row.correct===true?C.green:row.correct===false?C.red:C.border;
-          const predLabel=row.pred==='C'?'Cut':row.pred==='H'?'Hold':row.pred;
-          const actualLabel=expandVote(row.actual);
-          return(
-            <View key={i} style={[s.tRw,{borderBottomWidth:1,borderBottomColor:C.borderLight}]}>
-              <View style={{flex:1}}>
-                <Text style={{fontSize:13,fontWeight:'600',color:C.textPrimary}}>{m.d}</Text>
-                <Text style={{fontSize:11,color:C.textTertiary}}>PCE {m.pce.toFixed(1)}% · UE {m.unemp.toFixed(1)}%</Text>
-              </View>
-              <View style={{alignItems:'flex-end',gap:2}}>
-                <Text style={{fontSize:11,color:C.textTertiary}}>Pred: <Text style={{color:row.pred==='C'?C.teal:C.blue,fontWeight:'600'}}>{predLabel}</Text></Text>
-                <Text style={{fontSize:11,color:C.textTertiary}}>Actual: <Text style={{color:row.correct===true?C.green:row.correct===false?C.red:C.textTertiary,fontWeight:'600'}}>{actualLabel}</Text></Text>
-              </View>
-              <View style={{width:8,height:8,borderRadius:4,backgroundColor:dot,marginLeft:10,alignSelf:'center'}}/>
-            </View>
-          );
-        })}
-      </View>
-    </ScrollView>
-  );
+// ── Detail view ───────────────────────────────────────────────────────────────
+function showDetail(mb) {
+  const r        = BT.find(x => x.mb.nm === mb.nm);
+  const livePred = liveConditions ? runAlgo(liveConditions, mb) : null;
+
+  // Hide main panels, show detail
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-detail').classList.add('active');
+
+  // Banner
+  document.getElementById('detail-banner').innerHTML = `
+    <div class="banner-date">${mb.nm} — ${mb.role}</div>
+    <div class="vote-row">
+      <div class="vote-cell"><div class="vc-val" style="color:${accCol(r.acc)}">${r.acc}%</div><div class="vc-lbl">Accuracy</div></div>
+      <div class="vote-cell"><div class="vc-val" style="color:var(--green)">${r.corr}</div><div class="vc-lbl">Correct</div></div>
+      <div class="vote-cell"><div class="vc-val" style="color:var(--red)">${r.wrng}</div><div class="vc-lbl">Wrong</div></div>
+    </div>
+    ${livePred ? `
+      <div class="banner-label">Apr 28-29 Live Prediction</div>
+      <div class="banner-verdict ${livePred==='C'?'cut':'hold'}">${livePred==='C'?'CUT -25bps':'HOLD'}</div>
+    ` : ''}
+  `;
+
+  // History
+  const hist = document.getElementById('detail-history');
+  hist.innerHTML = '';
+  r.rows.forEach((row, i) => {
+    if (!row.eligible) return;
+    const m       = MEETINGS[i];
+    const dotCol  = row.correct===true ? 'var(--green)' : row.correct===false ? 'var(--red)' : 'var(--t4)';
+    const predLbl = row.pred === 'C' ? 'Cut' : 'Hold';
+    const actLbl  = expandVote(row.actual);
+    const predCol = row.pred === 'C' ? 'var(--teal)' : 'var(--blue)';
+    const actCol  = row.correct===true ? 'var(--green)' : row.correct===false ? 'var(--red)' : 'var(--t3)';
+    const div = document.createElement('div');
+    div.className = 'dh-row';
+    div.innerHTML = `
+      <div class="dh-date">${m.d}</div>
+      <div class="dh-eco">PCE ${m.pce.toFixed(1)}% · UE ${m.unemp.toFixed(1)}%</div>
+      <div class="dh-pred" style="color:${predCol}">Pred: ${predLbl}</div>
+      <div class="dh-actual" style="color:${actCol}">Actual: ${actLbl}</div>
+      <div class="dh-dot" style="background:${dotCol}"></div>
+    `;
+    hist.appendChild(div);
+  });
 }
 
-export default function App(){
-  const [tab,setTab]=useState('forecast');
-  const [detail,setDetail]=useState(null);
-  return(
-    <View style={{flex:1,backgroundColor:C.bg}}>
-      <StatusBar style="dark"/>
-      <View style={s.hdr}>
-        <Text style={s.logo}>Federal Fund Rate<Text style={{color:C.teal}}> PREDICTOR</Text></Text>
-      </View>
-      {!detail&&(
-        <View style={s.tabBar}>
-          {['forecast','backtest'].map(t=>(
-            <TouchableOpacity key={t} style={[s.tabB,tab===t&&s.tabA]} onPress={()=>{setTab(t);setDetail(null);}}>
-              <Text style={[s.tabT,tab===t&&s.tabTA]}>{t==='forecast'?'Forecast':'Backtest'}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-      {detail
-        ?<DetailView item={detail} onBack={()=>setDetail(null)}/>
-        :tab==='forecast'
-          ?<ForecastTab onMember={setDetail}/>
-          :<BacktestTab onMember={setDetail}/>
-      }
-    </View>
-  );
+function hideDetail() {
+  document.getElementById('panel-detail').classList.remove('active');
+  document.getElementById('panel-forecast').classList.add('active');
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===0));
 }
 
-const s=StyleSheet.create({
-  hdr:{backgroundColor:C.card,borderBottomWidth:1,borderBottomColor:C.border,paddingTop:Platform.OS==='ios'?50:30,paddingBottom:12,paddingHorizontal:16,flexDirection:'row',alignItems:'center',gap:4},
-  logo:{fontSize:18,fontWeight:'700',color:'#1b2a4a'},
-  tabBar:{backgroundColor:C.card,borderBottomWidth:1,borderBottomColor:C.border,flexDirection:'row'},
-  tabB:{flex:1,alignItems:'center',paddingVertical:12,borderBottomWidth:2,borderBottomColor:'transparent'},
-  tabA:{borderBottomColor:C.teal},tabT:{fontSize:14,color:C.textTertiary,fontWeight:'500'},tabTA:{color:'#1b2a4a',fontWeight:'700'},
-  ban:{backgroundColor:C.card,borderRadius:10,borderWidth:1,borderColor:C.border,padding:16,marginBottom:16,shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.06,shadowRadius:3,elevation:2},
-  bDt:{fontSize:13,fontWeight:'600',color:'#1b2a4a',marginBottom:4},
-  bLb:{fontSize:10,fontWeight:'600',color:C.textTertiary,letterSpacing:0.6,marginBottom:6,marginTop:4},
-  bOt:{fontSize:20,fontWeight:'700',marginBottom:14},
-  bRw:{flexDirection:'row',marginBottom:14},
-  bSt:{flex:1,alignItems:'center'},
-  bV:{fontSize:22,fontWeight:'700',color:'#1b2a4a',lineHeight:26},
-  bL:{fontSize:9,fontWeight:'600',color:C.textTertiary,marginTop:2},
-  bDv:{width:1,backgroundColor:C.border},
-  secH:{fontSize:11,fontWeight:'600',color:C.textTertiary,letterSpacing:0.7,marginBottom:12,marginTop:4},
-  grid:{flexDirection:'row',flexWrap:'wrap',gap:10,marginBottom:16},
-  mc:{width:'47.5%',backgroundColor:C.card,borderRadius:10,borderWidth:1,borderColor:C.border,borderTopWidth:3,padding:12,shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.06,shadowRadius:3,elevation:2},
-  mcN:{fontSize:13,fontWeight:'700',color:'#1b2a4a',marginBottom:2},mcR:{fontSize:10,color:C.textTertiary,marginBottom:8},
-  mcV:{fontSize:14,fontWeight:'700',marginBottom:4},mcC:{fontSize:10,color:C.textTertiary,marginBottom:4},
-  dis:{backgroundColor:'#fef6e7',borderRadius:4,borderWidth:1,borderColor:'#f0c06a',paddingHorizontal:7,paddingVertical:2,alignSelf:'flex-start',marginTop:6},
-  disT:{fontSize:9,fontWeight:'600',color:C.orange},
-  ctx:{backgroundColor:C.card,borderRadius:10,borderWidth:1,borderColor:C.border,padding:13},
-  stC:{flex:1,backgroundColor:C.card,borderRadius:10,borderWidth:1,borderColor:C.border,padding:14,shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.06,shadowRadius:3,elevation:2},
-  stL:{fontSize:10,fontWeight:'600',color:C.textTertiary,letterSpacing:0.6,marginBottom:4},
-  stV:{fontSize:22,fontWeight:'700',color:'#1b2a4a'},
-  stS:{fontSize:11,color:C.textTertiary,marginTop:2},
-  tbl:{backgroundColor:C.card,borderRadius:10,borderWidth:1,borderColor:C.border,overflow:'hidden',shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.06,shadowRadius:3,elevation:2},
-  tRw:{flexDirection:'row',alignItems:'center',paddingHorizontal:14,paddingVertical:11,borderBottomWidth:1,borderBottomColor:'#f0f2f5'},
-  aB:{fontSize:15,fontWeight:'700',marginLeft:8,minWidth:40,textAlign:'right'},
-  back:{backgroundColor:C.card,borderRadius:8,borderWidth:1,borderColor:C.border,paddingHorizontal:14,paddingVertical:8,alignSelf:'flex-start',marginBottom:14},
-});
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['forecast','backtest'][i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ── Init — fetch on page load ─────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
