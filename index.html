@@ -1,636 +1,293 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FOMC Vote Predictor</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<style>
-  :root {
-    --mp-navy:        #1b2a4a;
-    --mp-navy-dark:   #152238;
-    --mp-navy-light:  #243660;
-    --mp-teal:        #00b4a0;
-    --mp-teal-light:  #00d4bc;
-    --mp-red:         #e74c3c;
-    --mp-red-light:   #fdeceb;
-    --mp-green:       #27ae60;
-    --mp-green-light: #eafaf1;
-    --mp-orange:      #f5a623;
-    --mp-orange-light:#fef6e7;
-    --mp-blue:        #3498db;
-    --mp-blue-light:  #ebf5fb;
-    --bg:             #f5f6f8;
-    --card:           #ffffff;
-    --card-border:    #e8ecf0;
-    --card-shadow:    0 1px 3px rgba(0,0,0,0.06);
-    --card-shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
-    --text-primary:   #1b2a4a;
-    --text-secondary: #5a6a85;
-    --text-tertiary:  #8e9baf;
-    --border:         #e8ecf0;
-    --border-light:   #f0f2f5;
-    --font:           'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-mono:      'IBM Plex Mono', 'Courier New', monospace;
-  }
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html, body {
-    background: var(--bg);
-    color: var(--text-primary);
-    font-family: var(--font);
-    font-size: 14px;
-    line-height: 1.5;
-    min-height: 100vh;
-  }
-
-  /* TOPBAR */
-  .topbar {
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
-    height: 52px;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  .page-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.01em;
-  }
-  .page-datetime { text-align: right; line-height: 1.3; }
-  .dt-date { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-  .dt-updated { font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); }
-  .dt-updated strong { color: var(--mp-orange); font-weight: 500; }
-
-  /* TAB BAR */
-  .tab-bar {
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    display: flex;
-  }
-  .tab-btn {
-    padding: 0 20px;
-    height: 44px;
-    font-family: var(--font);
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
-    white-space: nowrap;
-  }
-  .tab-btn:hover { color: var(--text-primary); }
-  .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--mp-teal); font-weight: 600; }
-
-  /* PANELS */
-  .panel { display: none; }
-  .panel.active { display: block; }
-
-  /* CONTENT AREA */
-  .content { padding: 24px; max-width: 1400px; }
-
-  /* FORECAST BANNER */
-  .forecast-banner {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    box-shadow: var(--card-shadow);
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-  }
-  .fb-label { font-size: 12px; font-weight: 500; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; }
-  .fb-date  { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-  .fb-sep   { color: var(--border); font-size: 18px; margin: 0 4px; }
-  .fb-outcome { font-size: 17px; font-weight: 700; }
-  .fb-outcome.hold { color: var(--mp-blue); }
-  .fb-outcome.cut  { color: var(--mp-teal); }
-  .fb-count { font-size: 14px; font-weight: 600; color: var(--text-primary); }
-  .fb-dissent { color: var(--mp-orange); }
-  .tally-wrap { display: flex; align-items: center; gap: 6px; margin-left: 4px; }
-  .tally-track { width: 80px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
-  .tally-fill  { height: 100%; border-radius: 3px; background: var(--mp-teal); }
-  .tally-pct   { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
-
-  /* SECTION HEADER */
-  .section-hd {
-    font-size: 11px; font-weight: 600; color: var(--text-tertiary);
-    text-transform: uppercase; letter-spacing: 0.07em;
-    margin-bottom: 12px;
-    display: flex; align-items: center; gap: 7px;
-  }
-  .section-hd::before {
-    content: ''; display: inline-block;
-    width: 3px; height: 12px;
-    background: var(--mp-teal); border-radius: 2px;
-  }
-
-  /* MEMBER GRID */
-  .member-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .mc {
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    border-radius: 8px;
-    box-shadow: var(--card-shadow);
-    padding: 14px 16px;
-    transition: box-shadow 0.15s;
-    border-top: 3px solid var(--border);
-  }
-  .mc:hover { box-shadow: var(--card-shadow-hover); }
-  .mc.mc-hold { border-top-color: var(--mp-blue); }
-  .mc.mc-cut  { border-top-color: var(--mp-teal); }
-  .mc.mc-dis  { border-top-color: var(--mp-orange); }
-  .mc-name { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
-  .sdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  .sd-hawk { background: var(--mp-red); }
-  .sd-dove { background: var(--mp-teal); }
-  .sd-cent { background: var(--mp-blue); }
-  .mc-role { font-size: 11px; color: var(--text-tertiary); margin-bottom: 10px; }
-  .mc-vote { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-  .mc-vote.hold { color: var(--mp-blue); }
-  .mc-vote.cut  { color: var(--mp-teal); }
-  .mc-conf-label { font-size: 11px; color: var(--text-tertiary); margin-bottom: 4px; }
-  .mc-bar { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 6px; overflow: hidden; }
-  .mc-bar-fill { height: 100%; border-radius: 2px; }
-  .mc-dis-badge {
-    display: inline-block; font-size: 10px; font-weight: 600;
-    color: var(--mp-orange); background: var(--mp-orange-light);
-    border: 1px solid #f0c06a; padding: 1px 7px; border-radius: 4px;
-  }
-
-  /* CONTEXT */
-  .ctx-card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 8px; box-shadow: var(--card-shadow);
-    padding: 12px 16px; font-size: 12px; color: var(--text-secondary); line-height: 1.65;
-  }
-  .ctx-card strong { color: var(--text-primary); font-weight: 600; }
-
-  /* STAT ROW */
-  .stat-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
-  .stat-card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 8px; box-shadow: var(--card-shadow);
-    padding: 14px 20px; flex: 1; min-width: 130px;
-  }
-  .stat-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
-  .stat-value { font-size: 24px; font-weight: 700; color: var(--text-primary); line-height: 1.1; }
-  .stat-value.teal  { color: var(--mp-teal); }
-  .stat-value.green { color: var(--mp-green); }
-  .stat-value.red   { color: var(--mp-red); }
-  .stat-value.blue  { color: var(--mp-blue); }
-  .stat-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
-
-  /* CHARTS */
-  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--card-shadow); padding: 16px 18px; }
-  .chart-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
-  .chart-sub   { font-size: 11px; color: var(--text-tertiary); margin-bottom: 12px; }
-  .chart-outer { position: relative; }
-  .legend-row  { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
-  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
-  .legend-dot  { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
-
-  /* CHIPS */
-  .chip { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
-  .chip-hold  { background: var(--mp-blue-light); color: var(--mp-blue);   border: 1px solid #c5dff6; }
-  .chip-cut   { background: #e8faf8;               color: var(--mp-teal);   border: 1px solid #b3ede8; }
-  .chip-dcut  { background: #e8faf8;               color: var(--mp-teal);   border: 1px dashed #b3ede8; }
-  .chip-dhold { background: var(--mp-red-light);   color: var(--mp-red);    border: 1px dashed #f5b7b1; }
-  .chip-dbig  { background: var(--mp-orange-light);color: var(--mp-orange); border: 1px dashed #f0c06a; }
-  .chip-nv    { background: var(--border-light);   color: var(--text-tertiary); border: 1px solid var(--border); }
-  .chip-hawk  { background: var(--mp-red-light);   color: var(--mp-red);    border: 1px solid #f5b7b1; }
-  .chip-dove  { background: #e8faf8;               color: var(--mp-teal);   border: 1px solid #b3ede8; }
-  .chip-cent  { background: var(--mp-blue-light);  color: var(--mp-blue);   border: 1px solid #c5dff6; }
-
-  /* TABLE */
-  .tbl-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--card-shadow); overflow: hidden; margin-bottom: 20px; }
-  .tbl-card-header {
-    padding: 14px 18px; border-bottom: 1px solid var(--border);
-    font-size: 13px; font-weight: 600; color: var(--text-primary);
-    display: flex; align-items: center; gap: 7px;
-  }
-  .tbl-card-header::before { content: ''; display: inline-block; width: 3px; height: 13px; background: var(--mp-teal); border-radius: 2px; }
-  .tbl-wrap  { overflow-x: auto; }
-  .data-tbl  { width: 100%; border-collapse: collapse; }
-  .data-tbl th {
-    background: var(--bg); color: var(--text-tertiary);
-    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
-    padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--border);
-    white-space: nowrap; cursor: pointer; user-select: none;
-  }
-  .data-tbl th:hover { color: var(--text-primary); }
-  .data-tbl td { font-size: 13px; padding: 10px 14px; border-bottom: 1px solid var(--border-light); white-space: nowrap; vertical-align: middle; }
-  .data-tbl tr:last-child td { border-bottom: none; }
-  .data-tbl tr:hover td { background: var(--bg); cursor: pointer; }
-
-  /* ACCURACY */
-  .acc-wrap  { display: flex; align-items: center; gap: 8px; }
-  .acc-track { width: 64px; height: 5px; background: var(--border); border-radius: 3px; flex-shrink: 0; overflow: hidden; }
-  .acc-fill  { height: 100%; border-radius: 3px; }
-
-  /* RESULTS */
-  .res-c { color: var(--mp-green); font-weight: 600; font-size: 12px; }
-  .res-w { color: var(--mp-red);   font-weight: 600; font-size: 12px; }
-  .res-n { color: var(--text-tertiary); font-size: 12px; }
-  .miss-note { font-size: 11px; color: var(--text-tertiary); display: block; margin-top: 2px; }
-
-  /* DETAIL */
-  .detail-header { background: var(--card); border: 1px solid var(--border); border-radius: 8px 8px 0 0; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: none; }
-  .detail-name { font-size: 15px; font-weight: 700; color: var(--text-primary); }
-  .back-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text-secondary); font-family: var(--font); font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: 6px; cursor: pointer; }
-  .back-btn:hover { background: var(--border-light); color: var(--text-primary); }
-  .drill-stats { display: flex; flex-wrap: wrap; background: var(--card); border: 1px solid var(--border); border-top: none; border-bottom: none; }
-  .ds-cell { padding: 12px 20px; border-right: 1px solid var(--border); }
-  .ds-cell:last-child { border-right: none; }
-  .ds-lbl { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; }
-  .ds-val { font-size: 22px; font-weight: 700; margin-top: 2px; }
-
-  .cond-red   { color: var(--mp-red); }
-  .cond-green { color: var(--mp-green); }
-
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-  @media (max-width: 700px) {
-    .charts-row { grid-template-columns: 1fr; }
-    .content { padding: 16px; }
-    .topbar { padding: 0 16px; }
-    .tab-bar { padding: 0 16px; }
-  }
-</style>
-</head>
-<body>
-
-<!-- TOPBAR -->
-<div class="topbar">
-  <div class="page-title">FOMC Vote Predictor</div>
-  <div class="page-datetime">
-    <div class="dt-date" id="header-date"></div>
-    <div class="dt-updated">Last updated: <strong id="last-updated-ts">26 Mar 2026 11:14 CET</strong></div>
-  </div>
-</div>
-
-<!-- TAB BAR -->
-<div class="tab-bar">
-  <button class="tab-btn active" onclick="sw('next')">Next Meeting Forecast</button>
-  <button class="tab-btn" onclick="sw('backtest')">Backtest Results</button>
-  <button class="tab-btn" onclick="sw('drill')">Member Drill-Down</button>
-</div>
-
-<!-- PANEL 1: NEXT MEETING -->
-<div class="panel active" id="p-next">
-  <div class="content">
-    <div class="forecast-banner" id="fb"></div>
-    <div class="section-hd">Individual predictions &mdash; Apr 28&ndash;29, 2026</div>
-    <div class="member-grid" id="member-grid"></div>
-    <div class="ctx-card" id="ctx"></div>
-  </div>
-</div>
-
-<!-- PANEL 2: BACKTEST -->
-<div class="panel" id="p-backtest">
-  <div class="content">
-    <div class="stat-row" id="bt-stats"></div>
-    <div class="charts-row">
-      <div class="chart-card">
-        <div class="chart-title">Accuracy by member</div>
-        <div class="chart-sub">Algorithm prediction vs. actual vote (%)</div>
-        <div class="chart-outer" style="height:260px;"><canvas id="chart-m"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Accuracy by meeting</div>
-        <div class="chart-sub">Mar 2024 &ndash; Mar 2026 (%)</div>
-        <div class="chart-outer" style="height:260px;"><canvas id="chart-mt"></canvas></div>
-      </div>
-    </div>
-    <div class="legend-row">
-      <span class="legend-item"><span class="legend-dot" style="background:#27ae60;"></span>&ge; 80% &mdash; strong</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#3498db;"></span>60&ndash;79% &mdash; moderate</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span>&lt; 60% &mdash; weak</span>
-    </div>
-  </div>
-</div>
-
-<!-- PANEL 3: DRILL-DOWN -->
-<div class="panel" id="p-drill">
-  <div class="content">
-    <div id="drill-tbl-wrap">
-      <div class="tbl-card">
-        <div class="tbl-card-header">All members &mdash; click any row to expand</div>
-        <div class="tbl-wrap">
-          <table class="data-tbl">
-            <thead><tr>
-              <th onclick="sortBy('nm')">Member</th>
-              <th>Stance</th>
-              <th onclick="sortBy('eli')">Eligible</th>
-              <th onclick="sortBy('corr')">Correct</th>
-              <th onclick="sortBy('wrng')">Wrong</th>
-              <th onclick="sortBy('acc')">Accuracy</th>
-              <th></th>
-            </tr></thead>
-            <tbody id="drill-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    <div id="drill-detail" style="display:none;"></div>
-  </div>
-</div>
-
-<script>
-var MEETINGS = [
-  { d:'Mar 2024', pce:2.7, unemp:3.9, tariff:0 },
-  { d:'May 2024', pce:2.7, unemp:3.9, tariff:0 },
-  { d:'Jun 2024', pce:2.6, unemp:4.0, tariff:0 },
-  { d:'Jul 2024', pce:2.5, unemp:4.3, tariff:0 },
-  { d:'Sep 2024', pce:2.2, unemp:4.2, tariff:0 },
-  { d:'Nov 2024', pce:2.3, unemp:4.1, tariff:0 },
-  { d:'Dec 2024', pce:2.4, unemp:4.2, tariff:0 },
-  { d:'Jan 2025', pce:2.5, unemp:4.1, tariff:1 },
-  { d:'Mar 2025', pce:2.6, unemp:4.1, tariff:1 },
-  { d:'May 2025', pce:2.6, unemp:4.2, tariff:1 },
-  { d:'Jun 2025', pce:2.5, unemp:4.2, tariff:1 },
-  { d:'Jul 2025', pce:2.4, unemp:4.3, tariff:1 },
-  { d:'Sep 2025', pce:2.4, unemp:4.4, tariff:1 },
-  { d:'Oct 2025', pce:2.4, unemp:4.4, tariff:1 },
-  { d:'Dec 2025', pce:2.5, unemp:4.4, tariff:1 },
-  { d:'Jan 2026', pce:2.5, unemp:4.1, tariff:1 },
-  { d:'Mar 2026', pce:2.5, unemp:4.1, tariff:1 },
+const C = {
+  teal:'#00b4a0',red:'#e74c3c',green:'#27ae60',orange:'#f5a623',blue:'#3498db',
+  bg:'#f5f6f8',card:'#ffffff',border:'#e8ecf0',borderLight:'#f0f2f5',
+  textPrimary:'#1b2a4a',textSecondary:'#5a6a85',textTertiary:'#8e9baf',
+};
+const MEETINGS=[
+  {d:'Mar 2024',pce:2.7,unemp:3.9,tariff:0},{d:'May 2024',pce:2.7,unemp:3.9,tariff:0},
+  {d:'Jun 2024',pce:2.6,unemp:4.0,tariff:0},{d:'Jul 2024',pce:2.5,unemp:4.3,tariff:0},
+  {d:'Sep 2024',pce:2.2,unemp:4.2,tariff:0},{d:'Nov 2024',pce:2.3,unemp:4.1,tariff:0},
+  {d:'Dec 2024',pce:2.4,unemp:4.2,tariff:0},{d:'Jan 2025',pce:2.5,unemp:4.1,tariff:1},
+  {d:'Mar 2025',pce:2.6,unemp:4.1,tariff:1},{d:'May 2025',pce:2.6,unemp:4.2,tariff:1},
+  {d:'Jun 2025',pce:2.5,unemp:4.2,tariff:1},{d:'Jul 2025',pce:2.4,unemp:4.3,tariff:1},
+  {d:'Sep 2025',pce:2.4,unemp:4.4,tariff:1},{d:'Oct 2025',pce:2.4,unemp:4.4,tariff:1},
+  {d:'Dec 2025',pce:2.5,unemp:4.4,tariff:1},{d:'Jan 2026',pce:2.5,unemp:4.1,tariff:1},
+  {d:'Mar 2026',pce:2.5,unemp:4.1,tariff:1},
 ];
-var NEXT = { d:'Apr 28\u201329, 2026', pce:2.6, unemp:4.1, tariff:1 };
-var MEMBERS = [
-  { nm:'Powell',    role:'Chair / Governor',    stance:'cent', hs:50, cutPce:2.2, cutU:4.4, hikePce:3.2, hikeU:3.5, actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Williams',  role:'NY Fed / Vice Chair', stance:'cent', hs:48, cutPce:2.3, cutU:4.3, hikePce:3.0, hikeU:3.5, actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Jefferson', role:'Governor',             stance:'cent', hs:42, cutPce:2.4, cutU:4.2, hikePce:3.2, hikeU:3.6, actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Barr',      role:'Governor',             stance:'cent', hs:38, cutPce:2.6, cutU:4.1, hikePce:3.4, hikeU:3.5, actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Cook',      role:'Governor',             stance:'dove', hs:30, cutPce:2.8, cutU:4.0, hikePce:3.5, hikeU:4.0, actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Bowman',    role:'Governor',             stance:'hawk', hs:75, cutPce:2.1, cutU:4.5, hikePce:2.8, hikeU:3.5, actual:['H','H','H','H','DC','C','H','H','H','H','H','DC','C','C','C','DC','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Waller',    role:'Governor',             stance:'hawk', hs:68, cutPce:2.4, cutU:4.2, hikePce:3.5, hikeU:3.5, actual:['H','H','H','H','C','C','C','H','H','H','H','DC','C','C','C','DC','H'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-  { nm:'Miran',     role:'Governor',             stance:'dove', hs:10, cutPce:4.0, cutU:3.0, hikePce:4.5, hikeU:3.0, special:'miran', actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','DB','DB','DB','DC','DC'], el:[0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1] },
-  { nm:'Hammack',   role:'Cleveland Fed',        stance:'hawk', hs:82, cutPce:2.0, cutU:4.8, hikePce:2.8, hikeU:3.5, actual:['NV','NV','NV','NV','NV','NV','DH','NV','NV','NV','NV','NV','NV','NV','NV','H','H'], el:[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,1] },
-  { nm:'Logan',     role:'Dallas Fed',           stance:'hawk', hs:80, cutPce:2.1, cutU:4.7, hikePce:2.7, hikeU:3.6, actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','H','H'], el:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1] },
-  { nm:'Paulson',   role:'Philadelphia Fed',     stance:'dove', hs:38, cutPce:2.5, cutU:4.3, hikePce:3.3, hikeU:3.6, actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','H','H'], el:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1] },
-  { nm:'Kashkari',  role:'Minneapolis Fed',      stance:'cent', hs:55, cutPce:2.2, cutU:4.4, hikePce:3.1, hikeU:3.5, actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','H','H'], el:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1] },
-  { nm:'Collins',   role:'Boston Fed \u2020',    stance:'cent', hs:55, cutPce:2.3, cutU:4.3, hikePce:3.1, hikeU:3.5, actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','NV','NV'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0] },
-  { nm:'Musalem',   role:'St. Louis Fed \u2020', stance:'hawk', hs:65, cutPce:2.2, cutU:4.4, hikePce:3.0, hikeU:3.5, actual:['NV','NV','NV','NV','NV','NV','NV','H','H','H','H','H','C','C','C','NV','NV'], el:[0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0] },
-  { nm:'Schmid',    role:'Kansas City \u2020',   stance:'hawk', hs:78, cutPce:2.1, cutU:4.6, hikePce:2.9, hikeU:3.5, actual:['NV','NV','NV','NV','NV','NV','NV','H','H','H','H','H','C','DH','DH','NV','NV'], el:[0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0] },
-  { nm:'Goolsbee',  role:'Chicago Fed \u2020',   stance:'cent', hs:52, cutPce:2.4, cutU:4.2, hikePce:3.0, hikeU:3.5, actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','DH','NV','NV'], el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0] },
+const NEXT={d:'Apr 28-29, 2026',pce:2.6,unemp:4.1,tariff:1};
+const MEMBERS=[
+  {nm:'Powell',role:'Chair',stance:'cent',hs:50,cutPce:2.2,cutU:4.4,hikePce:3.2,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Williams',role:'NY Fed',stance:'cent',hs:48,cutPce:2.3,cutU:4.3,hikePce:3.0,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Jefferson',role:'Governor',stance:'cent',hs:42,cutPce:2.4,cutU:4.2,hikePce:3.2,hikeU:3.6,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Barr',role:'Governor',stance:'cent',hs:38,cutPce:2.6,cutU:4.1,hikePce:3.4,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Cook',role:'Governor',stance:'dove',hs:30,cutPce:2.8,cutU:4.0,hikePce:3.5,hikeU:4.0,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','H','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Bowman',role:'Governor',stance:'hawk',hs:75,cutPce:2.1,cutU:4.5,hikePce:2.8,hikeU:3.5,actual:['H','H','H','H','DC','C','H','H','H','H','H','DC','C','C','C','DC','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Waller',role:'Governor',stance:'hawk',hs:68,cutPce:2.4,cutU:4.2,hikePce:3.5,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','DC','C','C','C','DC','H'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+  {nm:'Miran',role:'Governor',stance:'dove',hs:10,cutPce:4.0,cutU:3.0,hikePce:4.5,hikeU:3.0,special:'miran',actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','DB','DB','DB','DC','DC'],el:[0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1]},
+  {nm:'Hammack',role:'Cleveland',stance:'hawk',hs:82,cutPce:2.0,cutU:4.8,hikePce:2.8,hikeU:3.5,actual:['NV','NV','NV','NV','NV','NV','DH','NV','NV','NV','NV','NV','NV','NV','NV','H','H'],el:[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,1]},
+  {nm:'Logan',role:'Dallas',stance:'hawk',hs:80,cutPce:2.1,cutU:4.7,hikePce:2.7,hikeU:3.6,actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','H','H'],el:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1]},
+  {nm:'Kashkari',role:'Minneapolis',stance:'cent',hs:55,cutPce:2.2,cutU:4.4,hikePce:3.1,hikeU:3.5,actual:['NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','NV','H','H'],el:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1]},
+  {nm:'Collins',role:'Boston',stance:'cent',hs:55,cutPce:2.3,cutU:4.3,hikePce:3.1,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','C','NV','NV'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0]},
+  {nm:'Goolsbee',role:'Chicago',stance:'cent',hs:52,cutPce:2.4,cutU:4.2,hikePce:3.0,hikeU:3.5,actual:['H','H','H','H','C','C','C','H','H','H','H','H','C','C','DH','NV','NV'],el:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0]},
 ];
-
-function runAlgo(m, member) {
-  if (member.special === 'miran') return m.pce > 4.0 ? 'H' : 'C';
-  var hs = member.hs + (m.tariff * 5);
-  if (m.pce >= member.hikePce && m.unemp <= member.hikeU && hs > 65) return 'H';
-  if (m.pce <= member.cutPce && m.unemp >= member.cutU) return 'C';
-  if (m.pce <= member.cutPce && hs < 50) return 'C';
-  return 'H';
+function runAlgo(m,mb){
+  if(mb.special==='miran')return m.pce>4.0?'H':'C';
+  const hs=mb.hs+(m.tariff*5);
+  if(m.pce>=mb.hikePce&&m.unemp<=mb.hikeU&&hs>65)return'H';
+  if(m.pce<=mb.cutPce&&m.unemp>=mb.cutU)return'C';
+  if(m.pce<=mb.cutPce&&hs<50)return'C';
+  return'H';
 }
-function confScore(m, member, pred) {
-  if (member.special === 'miran') return 92;
-  var hs = member.hs + (m.tariff * 5);
-  var margin = pred === 'C'
-    ? ((member.cutPce - m.pce)*14) + ((m.unemp - member.cutU)*10)
-    : ((m.pce - member.cutPce)*10) + ((member.cutU - m.unemp)*8) + hs/12;
-  return Math.min(92, Math.max(48, Math.round(52 + margin)));
+function cf(m,mb,p){
+  if(mb.special==='miran')return 92;
+  const hs=mb.hs+(m.tariff*5);
+  const mg=p==='C'?((mb.cutPce-m.pce)*14)+((m.unemp-mb.cutU)*10):((m.pce-mb.cutPce)*10)+((mb.cutU-m.unemp)*8)+hs/12;
+  return Math.min(92,Math.max(48,Math.round(52+mg)));
 }
-function actualDir(a) {
-  if (a==='H'||a==='DH') return 'H';
-  if (a==='C'||a==='DC'||a==='DB') return 'C';
-  return 'NV';
+function aDir(a){if(a==='H'||a==='DH')return'H';if(a==='C'||a==='DC'||a==='DB')return'C';return'NV';}
+function isCor(p,a){const ad=aDir(a);if(ad==='NV')return null;return p===ad;}
+function accCol(a){return a>=80?C.green:a>=60?C.blue:C.red;}
+function expandVote(v){
+  if(v==='H') return 'Hold';
+  if(v==='C') return 'Cut';
+  if(v==='DC') return 'Dissent Cut';
+  if(v==='DH') return 'Dissent Hold';
+  if(v==='DB') return 'Dissent -50bps';
+  if(v==='NV') return '—';
+  return v;
 }
-function isCorrect(pred, actual) {
-  var ad = actualDir(actual);
-  if (ad==='NV') return null;
-  return pred===ad;
-}
-
-var BT = MEMBERS.map(function(member) {
-  var rows = MEETINGS.map(function(m,i) {
-    if (!member.el[i]) return { eligible:false, pred:null, actual:member.actual[i], correct:null };
-    var pred = runAlgo(m, member);
-    return { eligible:true, pred:pred, actual:member.actual[i], correct:isCorrect(pred,member.actual[i]) };
+const BT=MEMBERS.map(mb=>{
+  const rows=MEETINGS.map((m,i)=>{
+    if(!mb.el[i])return{eligible:false,pred:null,actual:mb.actual[i],correct:null};
+    const pred=runAlgo(m,mb);
+    return{eligible:true,pred,actual:mb.actual[i],correct:isCor(pred,mb.actual[i])};
   });
-  var eli  = rows.filter(function(r){ return r.eligible; }).length;
-  var corr = rows.filter(function(r){ return r.correct===true; }).length;
-  var wrng = rows.filter(function(r){ return r.correct===false; }).length;
-  return { member:member, rows:rows, eli:eli, corr:corr, wrng:wrng, acc:eli>0?Math.round(corr/eli*100):0 };
+  const eli=rows.filter(r=>r.eligible).length,corr=rows.filter(r=>r.correct===true).length,wrng=rows.filter(r=>r.correct===false).length;
+  return{mb,rows,eli,corr,wrng,acc:eli>0?Math.round(corr/eli*100):0};
 });
-var totEli  = BT.reduce(function(s,r){ return s+r.eli; },0);
-var totCorr = BT.reduce(function(s,r){ return s+r.corr; },0);
-var totWrng = BT.reduce(function(s,r){ return s+r.wrng; },0);
-var totAcc  = Math.round(totCorr/totEli*100);
+const totEli=BT.reduce((s,r)=>s+r.eli,0),totCorr=BT.reduce((s,r)=>s+r.corr,0);
+const totAcc=Math.round(totCorr/totEli*100);
 
-function accCol(a) { return a>=80?'#27ae60':a>=60?'#3498db':'#e74c3c'; }
-function chipActual(v) {
-  var m={'H':['chip-hold','HOLD'],'C':['chip-cut','CUT'],'DC':['chip-dcut','\u2717 CUT'],'DH':['chip-dhold','\u2717 HOLD'],'DB':['chip-dbig','\u2717 \u221250bps'],'NV':['chip-nv','N/V']};
-  var x=m[v]||['chip-nv','?'];
-  return '<span class="chip '+x[0]+'">'+x[1]+'</span>';
+function Bar({pct,color,h=4}){
+  return(
+    <View style={{height:h,backgroundColor:C.border,borderRadius:2,overflow:'hidden'}}>
+      <View style={{width:`${pct}%`,height:h,backgroundColor:color,borderRadius:2}}/>
+    </View>
+  );
 }
-function chipPred(p) { return p==='C'?'<span class="chip chip-cut">CUT</span>':'<span class="chip chip-hold">HOLD</span>'; }
-function stanceChip(s) {
-  if(s==='hawk') return '<span class="chip chip-hawk">HAWK</span>';
-  if(s==='dove') return '<span class="chip chip-dove">DOVE</span>';
-  return '<span class="chip chip-cent">CENT</span>';
-}
-function sdot(s) { return '<span class="sdot '+(s==='hawk'?'sd-hawk':s==='dove'?'sd-dove':'sd-cent')+'"></span>'; }
 
-function buildNext() {
-  var preds = MEMBERS.map(function(member) {
-    var p=runAlgo(NEXT,member), c=confScore(NEXT,member,p);
-    var dis=(member.special==='miran')||((member.nm==='Bowman'||member.nm==='Waller')&&p==='C');
-    return {member:member,pred:p,conf:c,dissent:dis};
+function MCard({item,onPress}){
+  const bc=item.dissent?C.orange:item.pred==='C'?C.teal:C.blue;
+  return(
+    <TouchableOpacity onPress={onPress} style={[s.mc,{borderTopColor:bc}]} activeOpacity={0.7}>
+      <Text style={s.mcN}>{item.mb.nm}</Text>
+      <Text style={s.mcR}>{item.mb.role}</Text>
+      <Text style={[s.mcV,{color:item.pred==='C'?C.teal:C.blue}]}>{item.pred==='C'?'CUT -25bps':'HOLD'}</Text>
+      <Text style={s.mcC}>Conf: {item.cf}%</Text>
+      <Bar pct={item.cf} color={accCol(item.cf)} h={3}/>
+      {item.dissent&&<View style={s.dis}><Text style={s.disT}>DISSENT LIKELY</Text></View>}
+    </TouchableOpacity>
+  );
+}
+
+function ForecastTab({onMember}){
+  const preds=MEMBERS.map(mb=>{
+    const p=runAlgo(NEXT,mb),c=cf(NEXT,mb,p),dis=(mb.special==='miran')||((mb.nm==='Bowman'||mb.nm==='Waller')&&p==='C');
+    return{mb,pred:p,cf:c,dissent:dis};
   });
-  var holdN=preds.filter(function(x){return x.pred==='H';}).length;
-  var cutN =preds.filter(function(x){return x.pred==='C';}).length;
-  var disN =preds.filter(function(x){return x.dissent;}).length;
-  var maj=holdN>=cutN?'H':'C';
-  var holdPct=Math.round(holdN/preds.length*100);
+  const holdN=preds.filter(x=>x.pred==='H').length,cutN=preds.filter(x=>x.pred==='C').length,disN=preds.filter(x=>x.dissent).length;
+  const maj=holdN>=cutN?'H':'C',hp=Math.round(holdN/preds.length*100);
 
-  document.getElementById('fb').innerHTML =
-    '<span class="fb-date">Apr 28\u201329, 2026</span><span class="fb-sep">|</span>'+
-    '<span class="fb-label">Forecast:</span>'+
-    '<span class="fb-outcome '+(maj==='H'?'hold':'cut')+'">'+(maj==='H'?'HOLD &mdash; 3.50&ndash;3.75%':'CUT &minus;25bps &rarr; 3.25&ndash;3.50%')+'</span>'+
-    '<span class="fb-sep">|</span>'+
-    '<span class="fb-label">Hold:</span> <span class="fb-count">'+holdN+'</span>&nbsp;&nbsp;'+
-    '<span class="fb-label">Cut:</span> <span class="fb-count">'+cutN+'</span>&nbsp;&nbsp;'+
-    '<span class="fb-label">Dissents:</span> <span class="fb-count fb-dissent">'+disN+'</span>'+
-    '<span class="fb-sep">|</span>'+
-    '<div class="tally-wrap"><span style="font-size:11px;color:var(--text-tertiary);font-weight:500;">HOLD</span>'+
-    '<div class="tally-track"><div class="tally-fill" style="width:'+holdPct+'%;"></div></div>'+
-    '<span class="tally-pct">'+holdPct+'%</span></div>';
+  return(
+    <ScrollView style={{flex:1,backgroundColor:C.bg}} contentContainerStyle={{padding:16,paddingBottom:32}}>
+      <View style={s.ban}>
+        <Text style={s.bDt}>{NEXT.d}</Text>
+        <Text style={s.bLb}>PREDICTED OUTCOME</Text>
+        <Text style={[s.bOt,{color:maj==='H'?C.blue:C.teal}]}>{maj==='H'?'HOLD — 3.50-3.75%':'CUT -25bps'}</Text>
+        <View style={s.bRw}>
+          <View style={s.bSt}><Text style={s.bV}>{holdN}</Text><Text style={s.bL}>HOLD</Text></View>
+          <View style={s.bDv}/>
+          <View style={s.bSt}><Text style={[s.bV,{color:C.teal}]}>{cutN}</Text><Text style={s.bL}>CUT</Text></View>
+          <View style={s.bDv}/>
+          <View style={s.bSt}><Text style={[s.bV,{color:C.orange}]}>{disN}</Text><Text style={s.bL}>DISSENTS</Text></View>
+        </View>
+        <View style={{flexDirection:'row',alignItems:'center',gap:8}}>
+          <Text style={{fontSize:11,color:C.textTertiary,fontWeight:'600',width:36,lineHeight:16}}>HOLD</Text>
+          <View style={{flex:1,alignSelf:'center'}}><Bar pct={hp} color={C.teal} h={6}/></View>
+          <Text style={{fontSize:12,fontWeight:'600',color:C.textSecondary,lineHeight:16,width:36,textAlign:'right'}}>{hp}%</Text>
+        </View>
+      </View>
 
-  var grid=document.getElementById('member-grid');
-  grid.innerHTML='';
-  preds.forEach(function(x) {
-    var cls=x.dissent?'mc-dis':x.pred==='C'?'mc-cut':'mc-hold';
-    var div=document.createElement('div');
-    div.className='mc '+cls;
-    div.innerHTML=
-      '<div class="mc-name">'+sdot(x.member.stance)+x.member.nm+'</div>'+
-      '<div class="mc-role">'+x.member.role+'</div>'+
-      '<div class="mc-vote '+(x.pred==='C'?'cut':'hold')+'">'+(x.pred==='C'?'CUT \u221225bps':'HOLD')+'</div>'+
-      '<div class="mc-conf-label">Confidence: '+x.conf+'%</div>'+
-      '<div class="mc-bar"><div class="mc-bar-fill" style="width:'+x.conf+'%;background:'+accCol(x.conf)+';"></div></div>'+
-      (x.dissent?'<span class="mc-dis-badge">DISSENT LIKELY</span>':'');
-    grid.appendChild(div);
-  });
-  document.getElementById('ctx').innerHTML=
-    '<strong>Conditions entering April meeting:</strong> PCE 2.6% (above 2% target) &middot; Unemployment 4.1% &middot; GDP 2.4% &middot; '+
-    'Tariff pressure: moderate &middot; Oil elevated (Iran conflict) &middot; Powell term ends May 2026 &middot; '+
-    'March SEP revised 2026 inflation forecast to 2.7%. Consensus: hold; one cut possible H2 2026 at earliest. '+
-    'Dissent risk: Miran (unconditional cut), Bowman &amp; Waller if data softens. &dagger; Rotated off committee after 2025.';
+      <Text style={s.secH}>INDIVIDUAL PREDICTIONS</Text>
+      <View style={s.grid}>
+        {preds.map((item,i)=><MCard key={i} item={item} onPress={()=>onMember(item)}/>)}
+      </View>
+
+      <View style={s.ctx}>
+        <Text style={{fontSize:12,color:C.textSecondary,lineHeight:19}}>
+          <Text style={{fontWeight:'700',color:C.textPrimary}}>Economic Conditions:{'\n'}</Text>
+          <Text style={{fontWeight:'600',color:C.textPrimary}}>Personal Consumption Expenditures (PCE): </Text>
+          <Text>2.6% — above the 2% target but trending sideways. The committee views this as a reason to remain cautious.{'\n'}</Text>
+          <Text style={{fontWeight:'600',color:C.textPrimary}}>Unemployment (UE): </Text>
+          <Text>4.1% — near the long-run neutral level, labor market remains stable with no urgent pressure to ease.{'\n'}</Text>
+          <Text style={{fontWeight:'600',color:C.textPrimary}}>Tariff Environment: </Text>
+          <Text>Moderate tariff pressure ongoing since early 2025, adding upside risk to inflation and reducing appetite for rate cuts.{'\n'}</Text>
+          <Text style={{fontWeight:'600',color:C.textPrimary}}>Chair Powell's Mandate: </Text>
+          <Text>Expires May 2026. Powell has signaled data-dependence and patience.{'\n\n'}</Text>
+          <Text style={{fontWeight:'600',color:C.textPrimary}}>Consensus: </Text>
+          <Text>Broad agreement to hold at 3.50–3.75%. A cut remains possible in H2 2026 if PCE eases toward 2.2% or unemployment rises above 4.4%.</Text>
+        </Text>
+      </View>
+    </ScrollView>
+  );
 }
 
-function buildBacktest() {
-  var stats=[
-    {label:'Overall accuracy',value:totAcc+'%',cls:totAcc>=80?'teal':totAcc>=60?'blue':'red',sub:totCorr+' of '+totEli+' predictions'},
-    {label:'Correct',value:totCorr,cls:'green',sub:'direction matched'},
-    {label:'Wrong',value:totWrng,cls:'red',sub:'missed calls'},
-    {label:'Members',value:MEMBERS.length,cls:'',sub:'unique voters'},
-    {label:'Meetings',value:MEETINGS.length,cls:'',sub:'Mar 2024 \u2013 Mar 2026'},
-    {label:'Total votes',value:totEli,cls:'blue',sub:'eligible predictions'},
-  ];
-  document.getElementById('bt-stats').innerHTML=stats.map(function(s){
-    return '<div class="stat-card"><div class="stat-label">'+s.label+'</div><div class="stat-value '+s.cls+'">'+s.value+'</div><div class="stat-sub">'+s.sub+'</div></div>';
-  }).join('');
-
-  var chartOpts={
-    responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{backgroundColor:'#1b2a4a',titleColor:'#fff',bodyColor:'#c5cfe0',
-      titleFont:{family:"'Inter',sans-serif",size:12},bodyFont:{family:"'Inter',sans-serif",size:11},padding:8,cornerRadius:6}},
-    scales:{
-      x:{ticks:{color:'#8e9baf',font:{family:"'Inter',sans-serif",size:11},autoSkip:false,maxRotation:45},grid:{color:'#f0f2f5'},border:{color:'#e8ecf0'}},
-      y:{min:0,max:100,ticks:{callback:function(v){return v+'%';},color:'#8e9baf',font:{size:11}},grid:{color:'#f0f2f5'},border:{display:false}}
-    }
-  };
-  var sorted=BT.slice().sort(function(a,b){return b.acc-a.acc;});
-  new Chart(document.getElementById('chart-m'),{type:'bar',
-    data:{labels:sorted.map(function(r){return r.member.nm;}),
-      datasets:[{data:sorted.map(function(r){return r.acc;}),backgroundColor:sorted.map(function(r){return accCol(r.acc);}),borderRadius:4,borderSkipped:false}]},
-    options:JSON.parse(JSON.stringify(chartOpts))});
-
-  var mAcc=MEETINGS.map(function(m,i){
-    var eli=BT.filter(function(r){return r.rows[i].eligible;});
-    var corr=eli.filter(function(r){return r.rows[i].correct===true;}).length;
-    return {d:m.d,eli:eli.length,corr:corr,acc:eli.length>0?Math.round(corr/eli.length*100):0};
-  });
-  var opts2=JSON.parse(JSON.stringify(chartOpts));
-  opts2.plugins.tooltip.callbacks={label:function(c){return ' '+c.parsed.y+'% ('+mAcc[c.dataIndex].corr+'/'+mAcc[c.dataIndex].eli+')';}};
-  new Chart(document.getElementById('chart-mt'),{type:'bar',
-    data:{labels:mAcc.map(function(x){return x.d;}),
-      datasets:[{data:mAcc.map(function(x){return x.acc;}),backgroundColor:mAcc.map(function(x){return accCol(x.acc);}),borderRadius:4,borderSkipped:false}]},
-    options:opts2});
+function BacktestTab({onMember}){
+  return(
+    <ScrollView style={{flex:1,backgroundColor:C.bg}} contentContainerStyle={{padding:16,paddingBottom:32}}>
+      <View style={{flexDirection:'row',gap:10,marginBottom:16}}>
+        <View style={s.stC}>
+          <Text style={s.stL}>ACCURACY</Text>
+          <Text style={[s.stV,{color:accCol(totAcc),lineHeight:28}]}>{totAcc}%</Text>
+          <Text style={s.stS}>{totCorr}/{totEli}</Text>
+        </View>
+        <View style={s.stC}>
+          <Text style={s.stL}>CORRECT</Text>
+          <Text style={[s.stV,{color:C.green,lineHeight:28}]}>{totCorr}</Text>
+          <Text style={s.stS}>matched</Text>
+        </View>
+        <View style={s.stC}>
+          <Text style={s.stL}>MEETINGS</Text>
+          <Text style={[s.stV,{lineHeight:28}]}>17</Text>
+          <Text style={s.stS}>Mar 24–26</Text>
+        </View>
+      </View>
+      <Text style={s.secH}>MEMBER ACCURACY — tap to expand</Text>
+      <View style={s.tbl}>
+        {[...BT].sort((a,b)=>b.acc-a.acc).map((r,i)=>(
+          <TouchableOpacity key={i} style={[s.tRw,i===BT.length-1&&{borderBottomWidth:0}]}
+            onPress={()=>onMember({mb:r.mb,pred:runAlgo(NEXT,r.mb),cf:cf(NEXT,r.mb,runAlgo(NEXT,r.mb)),dissent:false})}
+            activeOpacity={0.7}>
+            <View style={{flex:1}}>
+              <Text style={{fontSize:13,fontWeight:'600',color:C.textPrimary}}>{r.mb.nm}</Text>
+              <Bar pct={r.acc} color={accCol(r.acc)} h={3}/>
+            </View>
+            <Text style={[s.aB,{color:accCol(r.acc)}]}>{r.acc}%</Text>
+            <Text style={{fontSize:11,color:C.textTertiary,marginLeft:4,width:32}}>{r.corr}/{r.eli}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </ScrollView>
+  );
 }
 
-var sortKey='acc',sortDir=-1;
-function buildDrillTable() {
-  var sorted=BT.slice().sort(function(a,b){
-    var av=sortKey==='nm'?a.member.nm:a[sortKey], bv=sortKey==='nm'?b.member.nm:b[sortKey];
-    return typeof av==='string'?av.localeCompare(bv)*sortDir:(av-bv)*sortDir;
-  });
-  var tbody=document.getElementById('drill-tbody');
-  tbody.innerHTML='';
-  sorted.forEach(function(r){
-    var tr=document.createElement('tr');
-    tr.innerHTML='<td style="font-weight:600;">'+r.member.nm+'</td>'+
-      '<td>'+stanceChip(r.member.stance)+'</td>'+
-      '<td style="color:var(--text-secondary);">'+r.eli+'</td>'+
-      '<td style="color:var(--mp-green);font-weight:600;">'+r.corr+'</td>'+
-      '<td style="color:var(--mp-red);font-weight:600;">'+r.wrng+'</td>'+
-      '<td><div class="acc-wrap"><span style="font-weight:700;min-width:36px;color:'+accCol(r.acc)+';">'+r.acc+'%</span>'+
-      '<div class="acc-track"><div class="acc-fill" style="width:'+r.acc+'%;background:'+accCol(r.acc)+';"></div></div></div></td>'+
-      '<td style="color:var(--text-tertiary);font-size:12px;">&#9654;</td>';
-    tr.onclick=function(){showDetail(r);};
-    tbody.appendChild(tr);
-  });
-}
-function sortBy(key){if(sortKey===key)sortDir*=-1;else{sortKey=key;sortDir=-1;}buildDrillTable();}
-
-function showDetail(r) {
-  document.getElementById('drill-tbl-wrap').style.display='none';
-  var w=document.getElementById('drill-detail');
-  w.style.display='block';
-  var html='<div class="detail-header"><div class="detail-name">'+r.member.nm+' &mdash; '+r.member.role+'</div>'+
-    '<button class="back-btn" onclick="hideDetail()">&larr; All Members</button></div>'+
-    '<div class="drill-stats">'+
-    '<div class="ds-cell"><div class="ds-lbl">Accuracy</div><div class="ds-val" style="color:'+accCol(r.acc)+';">'+r.acc+'%</div></div>'+
-    '<div class="ds-cell"><div class="ds-lbl">Correct</div><div class="ds-val" style="color:var(--mp-green);">'+r.corr+'</div></div>'+
-    '<div class="ds-cell"><div class="ds-lbl">Wrong</div><div class="ds-val" style="color:var(--mp-red);">'+r.wrng+'</div></div>'+
-    '<div class="ds-cell"><div class="ds-lbl">Eligible</div><div class="ds-val">'+r.eli+'</div></div></div>'+
-    '<div class="tbl-card" style="border-radius:0 0 8px 8px;"><div class="tbl-wrap">'+
-    '<table class="data-tbl"><thead><tr><th>Meeting</th><th>PCE</th><th>Unemp.</th><th>Tariff</th><th>Predicted</th><th>Actual vote</th><th>Result</th></tr></thead><tbody>';
-
-  r.rows.forEach(function(row,i){
-    if(!row.eligible) return;
-    var m=MEETINGS[i];
-    var resCls=row.correct===true?'res-c':row.correct===false?'res-w':'res-n';
-    var resTxt=row.correct===true?'&#10003; Correct':row.correct===false?'&#10007; Wrong':'&mdash;';
-    var missNote=row.correct===false?'<span class="miss-note">Pred. '+row.pred+', got '+actualDir(row.actual)+(row.actual==='DC'?' (dissent)':row.actual==='DH'?' (dissent)':row.actual==='DB'?' (dis.-50)':'')+'</span>':'';
-    html+='<tr>'+
-      '<td style="font-weight:600;">'+m.d+'</td>'+
-      '<td class="'+(m.pce<=2.3?'cond-green':m.pce>=2.7?'cond-red':'')+'">'+m.pce.toFixed(1)+'%</td>'+
-      '<td class="'+(m.unemp>=4.4?'cond-red':'')+'">'+m.unemp.toFixed(1)+'%</td>'+
-      '<td>'+(m.tariff?'<span style="color:var(--mp-orange);font-weight:600;">Yes</span>':'<span style="color:var(--text-tertiary);">No</span>')+'</td>'+
-      '<td>'+chipPred(row.pred)+'</td><td>'+chipActual(row.actual)+'</td>'+
-      '<td><span class="'+resCls+'">'+resTxt+'</span>'+missNote+'</td></tr>';
-  });
-  html+='</tbody></table></div></div>';
-  w.innerHTML=html;
-}
-function hideDetail(){
-  document.getElementById('drill-tbl-wrap').style.display='block';
-  document.getElementById('drill-detail').style.display='none';
+function DetailView({item,onBack}){
+  const r=BT.find(x=>x.mb.nm===item.mb.nm);
+  return(
+    <ScrollView style={{flex:1,backgroundColor:C.bg}} contentContainerStyle={{padding:16,paddingBottom:32}}>
+      <TouchableOpacity onPress={onBack} style={s.back}>
+        <Text style={{fontSize:13,fontWeight:'600',color:C.teal}}>← All Members</Text>
+      </TouchableOpacity>
+      <View style={s.ban}>
+        <Text style={s.bDt}>{item.mb.nm} — {item.mb.role}</Text>
+        <View style={s.bRw}>
+          <View style={s.bSt}><Text style={[s.bV,{color:accCol(r.acc)}]}>{r.acc}%</Text><Text style={s.bL}>ACC</Text></View>
+          <View style={s.bDv}/>
+          <View style={s.bSt}><Text style={[s.bV,{color:C.green}]}>{r.corr}</Text><Text style={s.bL}>CORRECT</Text></View>
+          <View style={s.bDv}/>
+          <View style={s.bSt}><Text style={[s.bV,{color:C.red}]}>{r.wrng}</Text><Text style={s.bL}>WRONG</Text></View>
+        </View>
+        <Text style={s.bLb}>APR 28-29 PREDICTION</Text>
+        <Text style={[s.bOt,{color:item.pred==='C'?C.teal:C.blue,fontSize:18}]}>{item.pred==='C'?'CUT -25bps':'HOLD'}</Text>
+      </View>
+      <Text style={s.secH}>MEETING HISTORY</Text>
+      <View style={s.tbl}>
+        {r.rows.map((row,i)=>{
+          if(!row.eligible)return null;
+          const m=MEETINGS[i];
+          const dot=row.correct===true?C.green:row.correct===false?C.red:C.border;
+          const predLabel=row.pred==='C'?'Cut':row.pred==='H'?'Hold':row.pred;
+          const actualLabel=expandVote(row.actual);
+          return(
+            <View key={i} style={[s.tRw,{borderBottomWidth:1,borderBottomColor:C.borderLight}]}>
+              <View style={{flex:1}}>
+                <Text style={{fontSize:13,fontWeight:'600',color:C.textPrimary}}>{m.d}</Text>
+                <Text style={{fontSize:11,color:C.textTertiary}}>PCE {m.pce.toFixed(1)}% · UE {m.unemp.toFixed(1)}%</Text>
+              </View>
+              <View style={{alignItems:'flex-end',gap:2}}>
+                <Text style={{fontSize:11,color:C.textTertiary}}>Pred: <Text style={{color:row.pred==='C'?C.teal:C.blue,fontWeight:'600'}}>{predLabel}</Text></Text>
+                <Text style={{fontSize:11,color:C.textTertiary}}>Actual: <Text style={{color:row.correct===true?C.green:row.correct===false?C.red:C.textTertiary,fontWeight:'600'}}>{actualLabel}</Text></Text>
+              </View>
+              <View style={{width:8,height:8,borderRadius:4,backgroundColor:dot,marginLeft:10,alignSelf:'center'}}/>
+            </View>
+          );
+        })}
+      </View>
+    </ScrollView>
+  );
 }
 
-function sw(name){
-  document.querySelectorAll('.tab-btn').forEach(function(b,i){b.classList.toggle('active',['next','backtest','drill'][i]===name);});
-  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
-  document.getElementById('p-'+name).classList.add('active');
+export default function App(){
+  const [tab,setTab]=useState('forecast');
+  const [detail,setDetail]=useState(null);
+  return(
+    <View style={{flex:1,backgroundColor:C.bg}}>
+      <StatusBar style="dark"/>
+      <View style={s.hdr}>
+        <Text style={s.logo}>Federal Fund Rate<Text style={{color:C.teal}}> PREDICTOR</Text></Text>
+      </View>
+      {!detail&&(
+        <View style={s.tabBar}>
+          {['forecast','backtest'].map(t=>(
+            <TouchableOpacity key={t} style={[s.tabB,tab===t&&s.tabA]} onPress={()=>{setTab(t);setDetail(null);}}>
+              <Text style={[s.tabT,tab===t&&s.tabTA]}>{t==='forecast'?'Forecast':'Backtest'}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+      {detail
+        ?<DetailView item={detail} onBack={()=>setDetail(null)}/>
+        :tab==='forecast'
+          ?<ForecastTab onMember={setDetail}/>
+          :<BacktestTab onMember={setDetail}/>
+      }
+    </View>
+  );
 }
 
-// Live clock
-function updateClock(){
-  var now=new Date();
-  var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  document.getElementById('header-date').textContent=days[now.getDay()]+', '+now.getDate()+' '+months[now.getMonth()]+' '+now.getFullYear();
-}
-updateClock();
-setInterval(updateClock,60000);
-
-// Timestamp placeholder
-(function(){
-  var el=document.getElementById('last-updated-ts');
-  if(el&&el.textContent.indexOf('26 Mar 2026 11:14 CET')!==-1) el.textContent='live (client)';
-})();
-
-buildNext();
-buildBacktest();
-buildDrillTable();
-</script>
-</body>
-</html>
+const s=StyleSheet.create({
+  hdr:{backgroundColor:C.card,borderBottomWidth:1,borderBottomColor:C.border,paddingTop:Platform.OS==='ios'?50:30,paddingBottom:12,paddingHorizontal:16,flexDirection:'row',alignItems:'center',gap:4},
+  logo:{fontSize:18,fontWeight:'700',color:'#1b2a4a'},
+  tabBar:{backgroundColor:C.card,borderBottomWidth:1,borderBottomColor:C.border,flexDirection:'row'},
+  tabB:{flex:1,alignItems:'center',paddingVertical:12,borderBottomWidth:2,borderBottomColor:'transparent'},
+  tabA:{borderBottomColor:C.teal},tabT:{fontSize:14,color:C.textTertiary,fontWeight:'500'},tabTA:{color:'#1b2a4a',fontWeight:'700'},
+  ban:{backgroundColor:C.card,borderRadius:10,borderWidth:1,borderColor:C.border,padding:16,marginBottom:16,shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.06,shadowRadius:3,elevation:2},
+  bDt:{fontSize:13,fontWeight:'600',color:'#1b2a4a',marginBottom:4},
+  bLb:{fontSize:10,fontWeight:'600',color:C.textTertiary,letterSpacing:0.6,marginBottom:6,marginTop:4},
+  bOt:{fontSize:20,fontWeight:'700',marginBottom:14},
+  bRw:{flexDirection:'row',marginBottom:14},
+  bSt:{flex:1,alignItems:'center'},
+  bV:{fontSize:22,fontWeight:'700',color:'#1b2a4a',lineHeight:26},
+  bL:{fontSize:9,fontWeight:'600',color:C.textTertiary,marginTop:2},
+  bDv:{width:1,backgroundColor:C.border},
+  secH:{fontSize:11,fontWeight:'600',color:C.textTertiary,letterSpacing:0.7,marginBottom:12,marginTop:4},
+  grid:{flexDirection:'row',flexWrap:'wrap',gap:10,marginBottom:16},
+  mc:{width:'47.5%',backgroundColor:C.card,borderRadius:10,borderWidth:1,borderColor:C.border,borderTopWidth:3,padding:12,shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.06,shadowRadius:3,elevation:2},
+  mcN:{fontSize:13,fontWeight:'700',color:'#1b2a4a',marginBottom:2},mcR:{fontSize:10,color:C.textTertiary,marginBottom:8},
+  mcV:{fontSize:14,fontWeight:'700',marginBottom:4},mcC:{fontSize:10,color:C.textTertiary,marginBottom:4},
+  dis:{backgroundColor:'#fef6e7',borderRadius:4,borderWidth:1,borderColor:'#f0c06a',paddingHorizontal:7,paddingVertical:2,alignSelf:'flex-start',marginTop:6},
+  disT:{fontSize:9,fontWeight:'600',color:C.orange},
+  ctx:{backgroundColor:C.card,borderRadius:10,borderWidth:1,borderColor:C.border,padding:13},
+  stC:{flex:1,backgroundColor:C.card,borderRadius:10,borderWidth:1,borderColor:C.border,padding:14,shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.06,shadowRadius:3,elevation:2},
+  stL:{fontSize:10,fontWeight:'600',color:C.textTertiary,letterSpacing:0.6,marginBottom:4},
+  stV:{fontSize:22,fontWeight:'700',color:'#1b2a4a'},
+  stS:{fontSize:11,color:C.textTertiary,marginTop:2},
+  tbl:{backgroundColor:C.card,borderRadius:10,borderWidth:1,borderColor:C.border,overflow:'hidden',shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.06,shadowRadius:3,elevation:2},
+  tRw:{flexDirection:'row',alignItems:'center',paddingHorizontal:14,paddingVertical:11,borderBottomWidth:1,borderBottomColor:'#f0f2f5'},
+  aB:{fontSize:15,fontWeight:'700',marginLeft:8,minWidth:40,textAlign:'right'},
+  back:{backgroundColor:C.card,borderRadius:8,borderWidth:1,borderColor:C.border,paddingHorizontal:14,paddingVertical:8,alignSelf:'flex-start',marginBottom:14},
+});
